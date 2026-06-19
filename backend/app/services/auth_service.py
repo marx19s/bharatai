@@ -7,7 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 # Security secrets and JWT configs
 SECRET_KEY = "bharat_ai_sovereign_secret_key_1947"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 1 day
+ACCESS_TOKEN_EXPIRE_MINUTES = 15 # 15 minutes session expiry
 
 security_scheme = HTTPBearer()
 

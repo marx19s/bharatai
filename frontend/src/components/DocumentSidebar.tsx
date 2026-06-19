@@ -158,20 +158,20 @@ export default function DocumentSidebar({
   };
 
   return (
-    <aside className="w-full h-full flex flex-col glass-sidebar shrink-0 z-20">
+    <aside className="w-full h-full flex flex-col glass-sidebar shrink-0 z-20 text-slate-100">
       {/* Brand Header */}
-      <div className="p-6 border-b border-slate-200/30 flex items-center justify-between">
+      <div className="p-6 border-b border-slate-800/40 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 font-display flex items-center gap-1.5">
+          <h1 className="text-2xl font-black tracking-tight text-white font-display flex items-center gap-1.5">
             <span className="text-gradient-title">bharat</span><span className="text-gradient-orange">ai</span>
           </h1>
-          <p className="text-[8px] text-slate-450 uppercase tracking-[0.22em] font-black mt-0.5">
+          <p className="text-[8px] text-slate-400 uppercase tracking-[0.22em] font-black mt-0.5">
             India{"'"}s Sovereign Workspace
           </p>
         </div>
         <button
           onClick={() => setSidebarOpen(false)}
-          className="p-1.5 rounded-xl hover:bg-slate-150/40 hover:bg-slate-100/80 text-slate-400 hover:text-slate-655 transition-premium cursor-pointer border border-slate-200/50 shadow-sm bg-white/80 shrink-0 flex items-center justify-center"
+          className="p-1.5 rounded-xl hover:bg-slate-800/60 text-slate-400 hover:text-white transition-premium cursor-pointer border border-slate-800/60 shadow-sm bg-slate-900/60 shrink-0 flex items-center justify-center"
           title="Collapse Sidebar"
         >
           <X className="w-4 h-4" />
@@ -179,11 +179,11 @@ export default function DocumentSidebar({
       </div>
 
       {/* New Chat Action Button */}
-      <div className="p-4 border-b border-slate-200/30">
+      <div className="p-4 border-b border-slate-800/40">
         <button
           onClick={handleNewConversation}
           disabled={loading}
-          className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-full flex items-center justify-center gap-2 text-xs font-bold transition-premium hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] cursor-pointer shadow-md hover:shadow-lg disabled:opacity-50"
+          className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-550 text-white rounded-full flex items-center justify-center gap-2 text-xs font-bold transition-premium hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] cursor-pointer shadow-md hover:shadow-lg disabled:opacity-50"
         >
           <Plus className="w-4 h-4" />
           <span>New Conversation</span>
@@ -229,15 +229,15 @@ export default function DocumentSidebar({
               }}
               className={`p-3.5 rounded-2xl cursor-pointer border transition-premium group relative overflow-hidden ${
                 isSelected
-                  ? "bg-white/80 border-slate-200/60 shadow-md glow-primary"
-                  : "bg-white/30 border-transparent hover:bg-white/65 hover:border-slate-200/40 hover:shadow-sm"
+                  ? "bg-purple-950/60 border-purple-800/40 shadow-md glow-primary"
+                  : "bg-slate-900/30 border-transparent hover:bg-slate-800/45 hover:border-slate-800/40 hover:shadow-sm"
               }`}
             >
               {isSelected && (
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-500 to-indigo-600 rounded-r" />
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-pink-500 rounded-r" />
               )}
               <div className="flex items-start gap-3 pl-1">
-                <div className={`p-2.5 rounded-xl shrink-0 transition-premium ${isSelected ? "bg-orange-55 text-orange-600 border border-orange-100/50" : "bg-slate-100/50 text-slate-400 group-hover:text-slate-500"}`}>
+                <div className={`p-2.5 rounded-xl shrink-0 transition-premium ${isSelected ? "bg-purple-900/60 text-purple-400 border border-purple-800/40" : "bg-slate-800/50 text-slate-400 group-hover:text-slate-300"}`}>
                   <MessageSquare className="w-4.5 h-4.5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -254,7 +254,7 @@ export default function DocumentSidebar({
                             setEditingConvId(null);
                           }
                         }}
-                        className="w-full bg-white border border-slate-200 rounded-lg text-xs px-2 py-1 focus:outline-none focus:border-indigo-400 font-medium text-slate-800"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg text-xs px-2 py-1 focus:outline-none focus:border-purple-500 font-medium text-slate-100"
                         autoFocus
                       />
                       <button
@@ -274,7 +274,7 @@ export default function DocumentSidebar({
                     </div>
                   ) : (
                     <>
-                      <h4 className="text-xs font-bold truncate text-slate-800 group-hover:text-slate-900 transition-colors">
+                      <h4 className="text-xs font-bold truncate text-slate-200 group-hover:text-white transition-colors">
                         {conv.title}
                       </h4>
                       <div className="flex flex-col gap-0.5 mt-1">
@@ -282,7 +282,7 @@ export default function DocumentSidebar({
                           {formatDate(conv.created_at)}
                         </span>
                         {conv.document_name && (
-                          <span className="text-[9px] text-indigo-600 font-bold truncate flex items-center gap-1 mt-0.5">
+                          <span className="text-[9px] text-purple-400 font-bold truncate flex items-center gap-1 mt-0.5">
                             <span className="inline-block shrink-0">📄</span> {conv.document_name}
                           </span>
                         )}
@@ -299,7 +299,7 @@ export default function DocumentSidebar({
                           setEditingConvId(conv.id);
                           setEditingTitle(conv.title);
                         }}
-                        className="p-1.5 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 rounded-lg transition-premium shrink-0"
+                        className="p-1.5 text-slate-400 hover:text-purple-400 hover:bg-purple-950/40 rounded-lg transition-premium shrink-0"
                         title="Rename Chat"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -307,7 +307,7 @@ export default function DocumentSidebar({
                     )}
                     <button
                       onClick={(e) => handleDelete(e, conv.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-505 hover:bg-rose-50 rounded-lg transition-premium shrink-0"
+                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 rounded-lg transition-premium shrink-0"
                       title="Delete Chat"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -320,17 +320,17 @@ export default function DocumentSidebar({
         })}
       </div>
       {/* User Session Info & Logout */}
-      <div className="p-4 border-t border-slate-200/30 bg-slate-50/50 flex flex-col gap-2 shrink-0">
+      <div className="p-4 border-t border-slate-800/40 bg-slate-900/60 flex flex-col gap-2 shrink-0">
         <div className="flex items-center justify-between">
           <div className="min-w-0">
             <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Account</p>
-            <p className="text-xs font-bold text-slate-700 truncate max-w-[160px]">
+            <p className="text-xs font-bold text-slate-200 truncate max-w-[160px]">
               {typeof window !== "undefined" ? localStorage.getItem("bharatai_email") || "you@domain.com" : "you@domain.com"}
             </p>
           </div>
           <button
             onClick={onLogout}
-            className="px-3 py-1.5 bg-slate-905 hover:bg-slate-800 text-white rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition-premium shadow-sm shrink-0"
+            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition-premium shadow-sm shrink-0 border border-slate-700/60"
           >
             Log Out
           </button>
