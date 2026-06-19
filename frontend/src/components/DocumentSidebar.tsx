@@ -134,7 +134,7 @@ export default function DocumentSidebar({
   };
 
   return (
-    <aside className="w-80 h-full flex flex-col glass-sidebar shrink-0 z-20">
+    <aside className="w-full h-full flex flex-col glass-sidebar shrink-0 z-20">
       {/* Brand Header */}
       <div className="p-6 border-b border-slate-200/30 flex items-center justify-between">
         <div>

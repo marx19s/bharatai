@@ -57,7 +57,8 @@ export default function ChatInterface({
   activeConversationId, 
   onSelectConversation, 
   apiBaseUrl,
-  onRefreshDocuments
+  onRefreshDocuments,
+  sidebarOpen
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -723,7 +724,7 @@ export default function ChatInterface({
       <div className="flex-1 h-full flex flex-col relative z-10 bg-transparent">
         
         {/* Top Header Workspace Status */}
-        <header className="h-16 border-b border-slate-200/30 flex items-center justify-between px-6 bg-white/30 backdrop-blur-md shrink-0 z-20">
+        <header className={`h-16 border-b border-slate-200/30 flex items-center justify-between px-6 bg-white/30 backdrop-blur-md shrink-0 z-20 transition-all duration-300 ${!sidebarOpen ? "pl-16 md:pl-6" : ""}`}>
           <div className="flex items-center gap-4">
             {/* Collapse button removed from header above conversation per user request */}
             <div className="flex items-center gap-3">

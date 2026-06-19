@@ -44,7 +44,7 @@ export default function Home() {
       )}
       <div className={`shrink-0 overflow-hidden transition-[width] duration-300 z-40 md:relative ${
         sidebarOpen
-          ? "fixed md:static left-0 top-0 h-full w-80 max-w-[86vw]"
+          ? "fixed md:static left-0 top-0 h-full w-80 max-w-[86vw] shadow-2xl md:shadow-none border-r border-slate-200/50 md:border-r-0"
           : "w-0 pointer-events-none"
       }`}>
         <DocumentSidebar
