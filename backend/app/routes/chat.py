@@ -22,6 +22,7 @@ class ChatRequest(BaseModel):
     history: list[ChatMessagePayload] = []
 
 class ChatResponse(BaseModel):
+    message_id: int
     response: str
     search_results: list[dict] | None = None
     has_search: bool
@@ -174,13 +175,44 @@ def get_conversation_messages(
     )
     return [
         {
+            "id": m.id,
             "role": m.role,
             "content": m.content,
             "timestamp": m.timestamp,
             "has_search": m.has_search,
-            "document_id": m.document_id
+            "document_id": m.document_id,
+            "rating": m.rating,
+            "feedback_notes": m.feedback_notes
         } for m in messages
     ]
+
+class FeedbackPayload(BaseModel):
+    rating: int  # 1 for positive, -1 for negative
+    feedback_notes: str | None = None
+
+@router.post("/conversations/{conversation_id}/messages/{message_id}/feedback")
+def submit_message_feedback(
+    conversation_id: int,
+    message_id: int,
+    payload: FeedbackPayload,
+    user_id: int = Depends(auth_service.get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Submits user evaluation feedback on model response quality (Thumbs Up/Down). Used to gather alignment dataset logs."""
+    conv = db.query(Conversation).filter(Conversation.id == conversation_id, Conversation.user_id == user_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation session not found")
+        
+    msg = db.query(ChatMessage).filter(ChatMessage.id == message_id, ChatMessage.conversation_id == conversation_id).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+        
+    msg.rating = payload.rating
+    if payload.feedback_notes is not None:
+        msg.feedback_notes = payload.feedback_notes
+        
+    db.commit()
+    return {"status": "success", "message": "Feedback submitted successfully"}
 
 # -------------------- CHAT ENDPOINTS --------------------
 
@@ -332,6 +364,7 @@ def chat_endpoint(
     db.commit()
 
     return ChatResponse(
+        message_id=db_assistant_msg.id,
         response=ai_response,
         search_results=search_results,
         has_search=enable_search

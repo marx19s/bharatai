@@ -59,6 +59,8 @@ class ChatMessage(Base):
     conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=True)
     document_id = Column(Integer, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
     has_search = Column(Boolean, default=False)
+    rating = Column(Integer, nullable=True)  # 1 for positive, -1 for negative or 1-5 rating
+    feedback_notes = Column(Text, nullable=True)
 
     # Relationships
     conversation = relationship("Conversation", back_populates="messages")

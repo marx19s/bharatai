@@ -13,25 +13,25 @@
 }
 
 :root {
-  --background: #fcfbfa;
-  --foreground: #0f172a;
+  --background: #0b0c16;
+  --foreground: #eef2ff;
   
-  /* Glassmorphism system */
-  --glass-bg-sidebar: rgba(255, 255, 255, 0.45);
-  --glass-bg-panel: rgba(255, 255, 255, 0.55);
-  --glass-bg-card: rgba(255, 255, 255, 0.75);
-  --glass-bg-input: rgba(255, 255, 255, 0.85);
+  /* Futuristic Neon Glassmorphism system */
+  --glass-bg-sidebar: rgba(11, 12, 22, 0.65);
+  --glass-bg-panel: rgba(18, 20, 38, 0.7);
+  --glass-bg-card: rgba(26, 29, 54, 0.75);
+  --glass-bg-input: rgba(15, 17, 32, 0.85);
   
-  --glass-border: rgba(15, 23, 42, 0.05);
-  --glass-border-light: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(99, 102, 241, 0.15);
+  --glass-border-light: rgba(255, 255, 255, 0.08);
   
-  --accent-primary: #4f46e5;
-  --accent-secondary: #f97316;
-  --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #f97316 100%);
+  --accent-primary: #8b5cf6; /* Neon Purple */
+  --accent-secondary: #ec4899; /* Neon Pink */
+  --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 50%, #ec4899 100%);
 }
 
 body {
-  background: radial-gradient(circle at 100% 0%, rgba(255, 158, 73, 0.16) 0%, rgba(199, 210, 254, 0.18) 40%, rgba(252, 251, 250, 1) 85%), #fcfbfa;
+  background: radial-gradient(circle at 100% 0%, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.1) 40%, rgba(11, 12, 22, 1) 85%), #0b0c16;
   color: var(--foreground);
   font-family: var(--font-sans);
   height: 100vh;
@@ -124,13 +124,13 @@ body {
 
 /* Typography Gradient Helpers */
 .text-gradient-title {
-  background: linear-gradient(135deg, #0f172a 20%, #312e81 60%, #4f46e5 100%);
+  background: linear-gradient(135deg, #a78bfa 0%, #f472b6 50%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-gradient-orange {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 60%, #e11d48 100%);
+  background: linear-gradient(135deg, #fb923c 0%, #f43f5e 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

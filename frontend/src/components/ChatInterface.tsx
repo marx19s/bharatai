@@ -8,11 +8,14 @@ import {
 } from "lucide-react";
 
 interface Message {
+  id?: number;
   role: "user" | "assistant";
   content: string;
   timestamp?: string;
   has_search?: boolean;
   search_results?: Array<{ title: string; link: string; snippet: string }> | null;
+  rating?: number;
+  feedback_notes?: string;
 }
 
 interface Document {
@@ -283,6 +286,7 @@ export default function ChatInterface({
       const data = await response.json();
       
       const newAssistantMessage: Message = {
+        id: data.message_id,
         role: "assistant",
         content: data.response,
         has_search: data.has_search,
@@ -371,7 +375,14 @@ export default function ChatInterface({
       if (docDetailsRes.ok) {
         const docDetails = await docDetailsRes.json();
         setSelectedDoc(docDetails);
-        setMobileTab("document");
+        setMobileTab("chat");
+        
+        // Add user-interactive notification message in conversation asking what they want to do
+        const promptSystemMsg: Message = {
+          role: "assistant",
+          content: `📎 **Document '${file.name}' attached successfully!**\n\nWhat would you like me to do with this document?\n1. **Summarize** the contents in Simple English or Punjabi.\n2. Run a **Compliance Audit** (DPDP Act, Legal Risk, or IRDAI).\n3. Extract text with **Layout-Preserved OCR**.\n4. Answer specific questions based on the text.`
+        };
+        setMessages(prev => [...prev, promptSystemMsg]);
       }
 
       onRefreshDocuments();
@@ -766,21 +777,21 @@ export default function ChatInterface({
   return (
     <div className="flex-1 h-full flex flex-col relative overflow-hidden">
       
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(248,250,252,0.54)_45%,rgba(255,247,237,0.38)_100%)] pointer-events-none z-0" />
+      <div className="absolute inset-0 bg-transparent pointer-events-none z-0" />
 
       {/* Main Relative Container Wrapper */}
       <div className="flex-1 h-full flex flex-col relative z-10 bg-transparent">
         
         {/* Top Header Workspace Status */}
-        <header className={`h-16 border-b border-slate-200/30 flex items-center justify-between px-6 bg-white/30 backdrop-blur-md shrink-0 z-20 transition-all duration-300 ${!sidebarOpen ? "pl-16 md:pl-6" : ""}`}>
+        <header className={`h-16 border-b border-slate-800/40 flex items-center justify-between px-6 bg-slate-900/35 backdrop-blur-md shrink-0 z-20 transition-all duration-300 ${!sidebarOpen ? "pl-16 md:pl-6" : ""}`}>
           <div className="flex items-center gap-4">
             {/* Collapse button removed from header above conversation per user request */}
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-orange-100/40 border border-orange-200/30 text-orange-600 shadow-sm shrink-0 pulse-ring-slow">
+              <div className="p-2 rounded-xl bg-purple-950/40 border border-purple-800/40 text-purple-400 shadow-sm shrink-0 pulse-ring-slow">
                 <Sparkles className="w-4 h-4" />
               </div>
               <div>
-                <h1 className="text-base font-black tracking-tight text-slate-900 font-display flex items-center gap-1">
+                <h1 className="text-base font-black tracking-tight text-white font-display flex items-center gap-1">
                   <span className="text-gradient-title">bharat</span><span className="text-gradient-orange">ai</span>
                 </h1>
                 <p className="text-[8px] text-slate-400 font-black tracking-[0.2em] uppercase mt-0.5">
@@ -791,13 +802,13 @@ export default function ChatInterface({
           </div>
           <div className="flex items-center gap-3">
             {selectedDoc && (
-              <div className="flex lg:hidden bg-slate-100 p-0.5 rounded-lg border border-slate-200/60 shadow-inner">
+              <div className="flex lg:hidden bg-slate-950/40 p-0.5 rounded-lg border border-slate-800/60 shadow-inner">
                 <button
                   onClick={() => setMobileTab("chat")}
                   className={`px-3 py-1.5 text-xs font-extrabold rounded-md transition-all cursor-pointer ${
                     mobileTab === "chat"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
+                      ? "bg-slate-900 text-white shadow-sm border border-slate-850/30"
+                      : "text-slate-400 hover:text-white"
                   }`}
                 >
                   Chat
@@ -806,8 +817,8 @@ export default function ChatInterface({
                   onClick={() => setMobileTab("document")}
                   className={`px-3 py-1.5 text-xs font-extrabold rounded-md transition-all cursor-pointer ${
                     mobileTab === "document"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
+                      ? "bg-slate-900 text-white shadow-sm border border-slate-850/30"
+                      : "text-slate-400 hover:text-white"
                   }`}
                 >
                   Document
@@ -821,7 +832,7 @@ export default function ChatInterface({
         <div className="flex-1 flex overflow-hidden">
           
           {/* Left Side: Chat Workspace */}
-          <div className={`h-full flex-col min-w-0 ${selectedDoc ? (mobileTab === "chat" ? "flex w-full lg:w-[55%] lg:border-r border-slate-200/30" : "hidden lg:flex lg:w-[55%] lg:border-r border-slate-200/30") : "w-full flex"}`}>
+          <div className={`h-full flex-col min-w-0 ${selectedDoc ? (mobileTab === "chat" ? "flex w-full lg:w-[55%] lg:border-r border-slate-800/30" : "hidden lg:flex lg:w-[55%] lg:border-r border-slate-800/30") : "w-full flex"}`}>
             
             {/* Main Chat Workspace feed */}
             <div className="flex-1 overflow-y-auto scroll-smooth-premium p-4 md:p-6 space-y-6">
@@ -829,57 +840,88 @@ export default function ChatInterface({
                 
                 {/* Welcome Screen Dashboard when conversation is empty */}
                 {messages.length === 0 && (
-                  <div className="pt-6 pb-8 md:pt-8 md:pb-12 space-y-8">
-                    <div className="space-y-5 max-w-3xl mx-auto">
-                      <span className="inline-flex px-3.5 py-1.5 bg-orange-50 text-orange-700 font-black text-[9px] uppercase tracking-[0.18em] rounded-full border border-orange-200/60 shadow-sm">
-                        India-first AI workspace
-                      </span>
+                  <div className="pt-6 pb-8 md:pt-8 md:pb-12 space-y-8 animate-fade-in text-slate-100">
+                    <div className="space-y-6 max-w-3xl mx-auto text-center flex flex-col items-center">
+                      
+                      {/* Interactive Animated Mascot / Robot Hero */}
+                      <div className="relative w-36 h-36 flex items-center justify-center bg-slate-900/40 rounded-full border border-purple-500/20 shadow-2xl glow-primary select-none group">
+                        {/* Glow halo */}
+                        <div className="absolute inset-0 rounded-full bg-purple-500/10 blur-xl group-hover:bg-pink-500/20 transition-premium" />
+                        <svg className="w-24 h-24 text-purple-400 group-hover:text-pink-400 transition-premium animate-bounce-slow" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          {/* Faceplate */}
+                          <rect x="25" y="30" width="50" height="40" rx="20" fill="url(#avatarGradient)" stroke="#8b5cf6" strokeWidth="2.5" />
+                          {/* Ears */}
+                          <rect x="20" y="42" width="6" height="16" rx="3" fill="#ec4899" />
+                          <rect x="74" y="42" width="6" height="16" rx="3" fill="#ec4899" />
+                          {/* Eyes */}
+                          <circle cx="42" cy="50" r="5" fill="#eef2ff" className="animate-pulse" />
+                          <circle cx="58" cy="50" r="5" fill="#eef2ff" className="animate-pulse" />
+                          {/* Smile mouth */}
+                          <path d="M44 58 Q50 62 56 58" stroke="#eef2ff" strokeWidth="2" strokeLinecap="round" />
+                          {/* Antennas */}
+                          <path d="M50 30 L50 18" stroke="#8b5cf6" strokeWidth="2" />
+                          <circle cx="50" cy="16" r="4" fill="#ec4899" className="animate-ping" style={{ animationDuration: '3s' }} />
+                          <circle cx="50" cy="16" r="4" fill="#ec4899" />
+                          
+                          <defs>
+                            <linearGradient id="avatarGradient" x1="25" y1="30" x2="75" y2="70" gradientUnits="userSpaceOnUse">
+                              <stop stopColor="#1e1b4b" />
+                              <stop offset="1" stopColor="#311042" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                      </div>
+
                       <div className="space-y-4">
-                        <h2 className="text-3xl sm:text-4xl md:text-[42px] font-black tracking-tight text-slate-950 font-display leading-tight max-w-2xl">
-                          Search the web, analyze PDFs, translate Indian languages, and create notes in one place.
+                        <span className="inline-flex px-3.5 py-1.5 bg-purple-950/60 text-purple-300 font-black text-[9px] uppercase tracking-[0.18em] rounded-full border border-purple-800/60 shadow-sm animate-pulse-soft">
+                          Your AI. Your Way. Indian. Intelligent. Infinite.
+                        </span>
+                        <h2 className="text-3xl sm:text-4xl md:text-[42px] font-black tracking-tight text-white font-display leading-tight max-w-2xl">
+                          Your Sovereign <span className="text-gradient-title">indic</span> AI Space.
                         </h2>
-                        <p className="text-slate-600 text-sm md:text-base max-w-xl leading-relaxed font-medium">
-                          Built for students, professionals, and small teams who need local language support, document intelligence, and source-backed research without switching tools.
+                        <p className="text-slate-300 text-sm md:text-base max-w-xl leading-relaxed font-medium mx-auto">
+                          Built for the next generation. Search, translate, verify compliance audits, and analyze files with layout-preserved OCR.
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 max-w-3xl">
+                      {/* Quick Action Prompt Pill Cards */}
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 max-w-3xl w-full pt-4">
                         {STARTER_PROMPTS.map((item) => {
                           const Icon = item.icon;
                           return (
                             <button
                               key={item.label}
                               onClick={() => handleStarterPrompt(item.prompt)}
-                              className="min-h-24 p-3.5 rounded-lg border border-slate-200 bg-white/80 hover:bg-white hover:border-orange-200 text-left transition-premium shadow-sm cursor-pointer"
+                              className="min-h-24 p-4 rounded-2xl border border-purple-900/30 bg-slate-900/50 hover:bg-purple-950/30 hover:border-purple-500/50 text-left transition-premium shadow-md hover:shadow-purple-500/10 cursor-pointer group/card"
                             >
-                              <Icon className="w-4 h-4 text-orange-600 mb-3" />
-                              <span className="block text-xs font-black text-slate-900">{item.label}</span>
-                              <span className="block text-[10px] leading-relaxed text-slate-500 mt-1">
-                                Tap to draft
+                              <Icon className="w-5 h-5 text-purple-400 group-hover/card:text-pink-400 mb-3 transition-colors" />
+                              <span className="block text-xs font-black text-slate-100 group-hover/card:text-white">{item.label}</span>
+                              <span className="block text-[10px] leading-relaxed text-slate-400 mt-1 font-medium">
+                                Tap to run prompt
                               </span>
                             </button>
                           );
                         })}
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                      <div className="flex flex-col sm:flex-row gap-3 pt-6 w-full justify-center">
                         <button
                           onClick={() => fileInputRef.current?.click()}
-                          className="px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition-premium cursor-pointer shadow-md flex items-center justify-center gap-2"
+                          className="px-6 py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-premium shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2"
                         >
                           <Paperclip className="w-4 h-4" />
-                          Upload PDF
+                          Upload PDF Document
                         </button>
                         <button
                           onClick={() => setEnableSearch(!enableSearch)}
-                          className={`px-5 py-3 text-xs font-bold rounded-lg border transition-premium cursor-pointer flex items-center justify-center gap-2 ${
+                          className={`px-6 py-3.5 text-xs font-black uppercase tracking-wider rounded-xl border transition-premium cursor-pointer flex items-center justify-center gap-2 ${
                             enableSearch
-                              ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm"
-                              : "bg-white/80 border-slate-200 text-slate-700 hover:bg-white"
+                              ? "bg-purple-950/60 border-purple-500 text-purple-300 shadow-lg shadow-purple-500/10"
+                              : "bg-slate-900/60 border-slate-700 text-slate-200 hover:bg-slate-800/60"
                           }`}
                         >
                           <Search className="w-4 h-4" />
-                          {enableSearch ? "Web Search On" : "Enable Web Search"}
+                          {enableSearch ? "Web Search Active" : "Enable Web Search"}
                         </button>
                       </div>
                     </div>
@@ -901,10 +943,10 @@ export default function ChatInterface({
                       )}
                       <div className={`max-w-[78%] group flex flex-col ${isUser ? "items-end" : "items-start"}`}>
                         <div
-                          className={`p-4 rounded-2xl leading-relaxed text-sm shadow-sm transition-premium whitespace-pre-line border ${
+                          className={`p-4 rounded-2xl leading-relaxed text-sm shadow-md transition-premium whitespace-pre-line border ${
                             isUser
-                              ? "bg-gradient-to-br from-slate-800 to-slate-900 text-white border-slate-800 rounded-tr-none shadow-md"
-                              : "bg-white/80 border-slate-200/50 text-slate-800 rounded-tl-none shadow shadow-slate-100 backdrop-blur-sm hover:border-slate-300/60"
+                              ? "bg-purple-950/70 border-purple-800/40 text-slate-100 rounded-tr-none shadow-purple-900/10"
+                              : "bg-slate-900/70 border-slate-700/40 text-slate-200 rounded-tl-none shadow-slate-950/20 backdrop-blur-md hover:border-purple-800/30"
                           }`}
                         >
                           {msg.content}
@@ -981,6 +1023,58 @@ export default function ChatInterface({
                               <Volume2 className="w-3 h-3" />
                               <span>{speakingMessageIndex === index ? "Stop Listening" : "Listen (ਸੁਣੋ)"}</span>
                             </button>
+
+                            {/* Gen-Z Thumbs Feedback Loop for Model Training */}
+                            {msg.id && (
+                              <div className="flex items-center gap-1 border-l border-slate-200/50 pl-3">
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`${apiBaseUrl}/api/conversations/${activeConversationId}/messages/${msg.id}/feedback`, {
+                                        method: "POST",
+                                        headers: {
+                                          "Content-Type": "application/json",
+                                          "Authorization": `Bearer ${token}`
+                                        },
+                                        body: JSON.stringify({ rating: 1 })
+                                      });
+                                      if (res.ok) {
+                                        setMessages(prev => prev.map((m, i) => i === index ? { ...m, rating: 1 } : m));
+                                      }
+                                    } catch (err) {
+                                      console.error("Failed to save positive rating:", err);
+                                    }
+                                  }}
+                                  className={`p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer text-xs ${msg.rating === 1 ? "text-emerald-600 scale-110" : "text-slate-400"}`}
+                                  title="Response is accurate and helpful"
+                                >
+                                  👍
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`${apiBaseUrl}/api/conversations/${activeConversationId}/messages/${msg.id}/feedback`, {
+                                        method: "POST",
+                                        headers: {
+                                          "Content-Type": "application/json",
+                                          "Authorization": `Bearer ${token}`
+                                        },
+                                        body: JSON.stringify({ rating: -1 })
+                                      });
+                                      if (res.ok) {
+                                        setMessages(prev => prev.map((m, i) => i === index ? { ...m, rating: -1 } : m));
+                                      }
+                                    } catch (err) {
+                                      console.error("Failed to save negative rating:", err);
+                                    }
+                                  }}
+                                  className={`p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer text-xs ${msg.rating === -1 ? "text-rose-600 scale-110" : "text-slate-400"}`}
+                                  title="Response is incorrect or unhelpful"
+                                >
+                                  👎
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -998,7 +1092,7 @@ export default function ChatInterface({
                         )}
                       </div>
                       {isUser && (
-                        <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200/40 flex items-center justify-center text-amber-500 shadow-sm shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-purple-950/60 border border-purple-800/40 flex items-center justify-center text-purple-400 shadow-sm shrink-0">
                           <Smile className="w-4.5 h-4.5" />
                         </div>
                       )}
@@ -1008,13 +1102,13 @@ export default function ChatInterface({
 
                 {chatLoading && (
                   <div className="flex items-start gap-4 justify-start">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-500 to-indigo-650 flex items-center justify-center text-white shadow shadow-indigo-500/20 shrink-0 pulse-ring-slow">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white shadow shadow-purple-500/20 shrink-0 pulse-ring-slow">
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
-                    <div className="p-4 rounded-2xl bg-white/80 border border-slate-200/50 flex items-center gap-2 shadow-sm backdrop-blur-sm">
-                      <span className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                      <span className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                      <span className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                    <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-700/40 flex items-center gap-2 shadow-md backdrop-blur-md">
+                      <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                      <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                      <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "300ms" }}></span>
                     </div>
                   </div>
                 )}
@@ -1023,7 +1117,7 @@ export default function ChatInterface({
             </div>
 
             {/* Input Work Area Panel: pinned to bottom, layout-contained */}
-            <div className="p-3 md:p-6 bg-white/40 backdrop-blur-md shrink-0 z-20 border-t border-slate-200/20" style={{ contain: "layout" }}>
+            <div className="p-3 md:p-6 bg-slate-950/50 backdrop-blur-md shrink-0 z-20 border-t border-slate-800/40" style={{ contain: "layout" }}>
               <div className="max-w-3xl mx-auto flex flex-col gap-3">
                 
                 {/* Quick Actions row */}
@@ -1033,8 +1127,8 @@ export default function ChatInterface({
                       onClick={() => setEnableSearch(!enableSearch)}
                       className={`py-1.5 px-3 rounded-lg border text-xs font-bold flex items-center gap-2 transition-premium cursor-pointer shadow-sm shrink-0 ${
                         enableSearch
-                          ? "bg-indigo-50/70 border-indigo-200 text-indigo-750 shadow-sm"
-                          : "bg-white/80 border-slate-200 text-slate-605 hover:text-slate-800 hover:border-slate-300"
+                          ? "bg-purple-950/60 border-purple-500 text-purple-300 shadow-sm"
+                          : "bg-slate-900/60 border-slate-700/60 text-slate-300 hover:text-white hover:border-slate-650"
                       }`}
                     >
                       <Search className="w-3.5 h-3.5" />
@@ -1046,9 +1140,9 @@ export default function ChatInterface({
                     <button
                       onClick={handleFixGrammar}
                       disabled={!inputText.trim() || grammarFixing}
-                      className="py-1.5 px-3 rounded-lg border border-slate-200/80 bg-white/80 text-[10px] font-bold uppercase tracking-wider text-slate-655 hover:text-indigo-600 hover:border-indigo-200 transition-premium flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
+                      className="py-1.5 px-3 rounded-lg border border-slate-700/60 bg-slate-900/60 text-[10px] font-bold uppercase tracking-wider text-slate-300 hover:text-purple-400 hover:border-purple-500/50 transition-premium flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
                     >
-                      {grammarFixing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-indigo-500" />}
+                      {grammarFixing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-purple-400" />}
                       <span>Fix Grammar</span>
                     </button>
 
@@ -1056,18 +1150,18 @@ export default function ChatInterface({
                       <select
                         value={selectedLanguage}
                         onChange={(e) => setSelectedLanguage(e.target.value)}
-                        className="py-1.5 px-2 rounded-l-lg border border-r-0 border-slate-200/80 bg-white/80 text-[10px] font-bold text-slate-655 outline-none focus:border-pink-300 transition-premium cursor-pointer shadow-sm"
+                        className="py-1.5 px-2 rounded-l-lg border border-r-0 border-slate-700/60 bg-slate-900/60 text-[10px] font-bold text-slate-300 outline-none focus:border-purple-500 transition-premium cursor-pointer shadow-sm"
                       >
                         {INDIAN_LANGUAGES.map(lang => (
-                          <option key={lang} value={lang}>{lang}</option>
+                          <option key={lang} value={lang} className="bg-slate-950 text-white">{lang}</option>
                         ))}
                       </select>
                       <button
                         onClick={() => handleTranslateInput()}
                         disabled={!inputText.trim() || translatingInput}
-                        className="py-1.5 px-3 rounded-r-lg border border-slate-200/80 bg-white/80 text-[10px] font-bold uppercase tracking-wider text-slate-655 hover:text-pink-600 hover:border-pink-200 transition-premium flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
+                        className="py-1.5 px-3 rounded-r-lg border border-slate-700/60 bg-slate-900/60 text-[10px] font-bold uppercase tracking-wider text-slate-300 hover:text-pink-400 hover:border-pink-500/50 transition-premium flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
                       >
-                        {translatingInput ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5 text-pink-500" />}
+                        {translatingInput ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5 text-pink-400" />}
                         <span>Translate</span>
                       </button>
                     </div>
@@ -1076,12 +1170,12 @@ export default function ChatInterface({
 
                 {/* Active Attachment Capsule */}
                 {selectedDoc && (
-                  <div className="flex items-center gap-2 self-start py-1.5 px-3 bg-white/80 border border-slate-200 text-slate-700 text-xs rounded-full shadow-sm animate-pulse-soft backdrop-blur-sm">
-                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                  <div className="flex items-center gap-2 self-start py-1.5 px-3 bg-purple-950/60 border border-purple-800/40 text-purple-300 text-xs rounded-full shadow-sm animate-pulse-soft backdrop-blur-sm">
+                    <FileText className="w-3.5 h-3.5 text-purple-400" />
                     <span className="font-bold truncate max-w-xs">{selectedDoc.filename}</span>
                     <button
                       onClick={handleDetachDoc}
-                      className="p-0.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                      className="p-0.5 rounded-full hover:bg-purple-900 text-purple-400 hover:text-white transition-colors cursor-pointer"
                       title="Detach PDF"
                     >
                       <X className="w-3 h-3" />
@@ -1090,7 +1184,7 @@ export default function ChatInterface({
                 )}
 
                 {/* Core Input box card */}
-                <div className="flex items-end gap-2 md:gap-3 glass-input rounded-xl p-2.5 md:p-3.5 focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-50/50 transition-premium shadow-xl">
+                <div className="flex items-end gap-2 md:gap-3 glass-input rounded-xl p-2.5 md:p-3.5 focus-within:border-purple-500 focus-within:ring-4 focus-within:ring-purple-950/30 transition-premium shadow-xl">
                   
                   {/* Hidden native input and Paperclip trigger */}
                   <input
@@ -1106,8 +1200,8 @@ export default function ChatInterface({
                     disabled={uploading}
                     className={`p-2.5 md:p-3 rounded-lg transition-premium shrink-0 cursor-pointer ${
                       uploading 
-                        ? "bg-slate-100 text-indigo-650 animate-pulse" 
-                        : "bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 border border-slate-200/60 shadow-sm"
+                        ? "bg-purple-950/40 text-purple-400 animate-pulse" 
+                        : "bg-slate-900/60 hover:bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/60 shadow-sm"
                     }`}
                     title="Attach PDF Document"
                   >
@@ -1120,7 +1214,7 @@ export default function ChatInterface({
                     className={`p-2.5 md:p-3 rounded-lg transition-premium shrink-0 cursor-pointer ${
                       isListening
                         ? "bg-rose-600 text-white animate-pulse"
-                        : "bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 border border-slate-200/60 shadow-sm"
+                        : "bg-slate-900/60 hover:bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/60 shadow-sm"
                     }`}
                     title={isListening ? "Listening... click to stop" : "Start Voice dictation"}
                   >
@@ -1148,14 +1242,14 @@ export default function ChatInterface({
                     }
                     disabled={uploading}
                     rows={1}
-                    className="flex-1 min-w-0 resize-none bg-transparent outline-none border-none text-slate-800 placeholder-slate-400 text-sm max-h-32 py-2 px-1 focus:ring-0 disabled:opacity-50"
+                    className="flex-1 min-w-0 resize-none bg-transparent outline-none border-none text-slate-100 placeholder-slate-500 text-sm max-h-32 py-2 px-1 focus:ring-0 disabled:opacity-50"
                   />
 
                   {/* Send Message */}
                   <button
                     onClick={() => handleSend()}
                     disabled={!inputText.trim() || chatLoading || uploading}
-                    className="p-2.5 md:p-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-premium disabled:opacity-40 shrink-0 shadow-md cursor-pointer hover:shadow-lg active:translate-y-0"
+                    className="p-2.5 md:p-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-premium disabled:opacity-40 shrink-0 shadow-md cursor-pointer hover:shadow-lg active:translate-y-0"
                   >
                     <Send className="w-4 h-4" />
                   </button>

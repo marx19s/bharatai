@@ -27,7 +27,11 @@ class AIService:
             except Exception as e:
                 logger.error(f"Failed to initialize Gemini client: {e}. Falling back to mock mode.")
         else:
-            logger.warning("No GEMINI_API_KEY found or SDK not available. Running in MOCK MODE.")
+            # Fallback to check if key is present to disable mock
+            if self.api_key:
+                self.use_mock = False
+            else:
+                logger.warning("No GEMINI_API_KEY found or SDK not available. Running in MOCK MODE.")
 
     def generate_chat_response(self, messages: list[dict], system_instruction: str = None) -> str:
         """Generates chat response using Gemini API or mock fallback.

@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 class AIRouter:
     def __init__(self):
         # API Keys
-        self.gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
         self.openrouter_key = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("DEEPSEEK_API_KEY")
         
         # Available models order for fallback
@@ -58,13 +57,14 @@ class AIRouter:
         }
 
     def _call_gemini(self, messages: list[dict], model_name: str, system_instruction: str) -> str:
-        if not self.gemini_key:
+        gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
+        if not gemini_key:
             raise ValueError("Gemini API key is not configured.")
         
         from google import genai
         from google.genai import types
         
-        client = genai.Client(api_key=self.gemini_key)
+        client = genai.Client(api_key=gemini_key)
         contents = []
         for msg in messages:
             role = "user" if msg["role"] == "user" else "model"

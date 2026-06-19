@@ -168,11 +168,11 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans text-slate-900 relative">
+    <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans text-slate-100 relative">
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="fixed left-4 top-4 z-50 p-2 rounded-xl bg-white/80 border border-slate-200/50 shadow-md hover:bg-slate-100/80 text-slate-500 hover:text-slate-700 transition-premium cursor-pointer backdrop-blur-md flex items-center justify-center shrink-0"
+          className="fixed left-4 top-4 z-50 p-2 rounded-xl bg-slate-900/80 border border-slate-750/50 shadow-md hover:bg-slate-800/85 text-slate-300 hover:text-white transition-premium cursor-pointer backdrop-blur-md flex items-center justify-center shrink-0"
           title="Expand Sidebar"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -184,14 +184,14 @@ export default function Home() {
       {/* Left Sidebar showing Conversation History Sessions */}
       {sidebarOpen && (
         <button
-          className="fixed inset-0 z-30 bg-slate-950/20 backdrop-blur-[1px] md:hidden"
+          className="fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-[1px] md:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-label="Close sidebar overlay"
         />
       )}
       <div className={`shrink-0 overflow-hidden transition-[width] duration-300 z-40 md:relative ${
         sidebarOpen
-          ? "fixed md:static left-0 top-0 h-full w-80 max-w-[86vw] shadow-2xl md:shadow-none border-r border-slate-200/50 md:border-r-0"
+          ? "fixed md:static left-0 top-0 h-full w-80 max-w-[86vw] shadow-2xl md:shadow-none border-r border-slate-800/50 md:border-r-0"
           : "w-0 pointer-events-none"
       }`}>
         <DocumentSidebar
@@ -220,21 +220,40 @@ export default function Home() {
             token={token}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(248,250,252,0.54)_45%,rgba(255,247,237,0.38)_100%)]">
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden bg-transparent">
             {/* Ambient Background Blobs */}
-            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-orange-400/5 blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-1/4 right-1/3 w-80 h-80 rounded-full bg-indigo-500/10 blur-[130px] pointer-events-none" />
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-purple-500/5 blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-1/4 right-1/3 w-80 h-80 rounded-full bg-pink-500/5 blur-[130px] pointer-events-none" />
             
             <div className="max-w-2xl space-y-6 z-10 p-4">
-              <span className="inline-flex px-3.5 py-1.5 bg-orange-50 text-orange-700 font-black text-[9px] uppercase tracking-[0.18em] rounded-full border border-orange-200/60 shadow-sm animate-pulse-soft">
+              <span className="inline-flex px-3.5 py-1.5 bg-purple-950/60 text-purple-300 font-black text-[9px] uppercase tracking-[0.18em] rounded-full border border-purple-800/60 shadow-sm animate-pulse-soft">
                 India-first Sovereign AI workspace
               </span>
-              <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-950 font-display leading-tight">
+              <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-white font-display leading-tight">
                 Welcome to <span className="text-gradient-title">bharat</span><span className="text-gradient-orange">ai</span>
               </h2>
-              <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-lg mx-auto">
+              <p className="text-slate-300 text-sm md:text-base leading-relaxed max-w-lg mx-auto font-medium">
                 Search the web, analyze PDFs, translate Indian languages, and query documents in one premium workspace. Select an existing conversation from the sidebar history or create a new session.
               </p>
+
+              {/* Gen-Z Trust, Privacy & Sovereignty Markers */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto pt-2">
+                <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-800/40 flex flex-col items-center gap-1.5 text-center backdrop-blur-sm">
+                  <span className="text-lg">🇮🇳</span>
+                  <h4 className="text-xs font-black text-emerald-400">100% Indian Data</h4>
+                  <p className="text-[10px] text-emerald-350 leading-normal font-medium">Stated residency and computing stays strictly local in India.</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-850/40 flex flex-col items-center gap-1.5 text-center backdrop-blur-sm">
+                  <span className="text-lg">🔒</span>
+                  <h4 className="text-xs font-black text-purple-400">DPDP Safeguards</h4>
+                  <p className="text-[10px] text-purple-350 leading-normal font-medium">Auto-purge active PDF buffers. No model training on user logs.</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-850/40 flex flex-col items-center gap-1.5 text-center backdrop-blur-sm">
+                  <span className="text-lg">🛡️</span>
+                  <h4 className="text-xs font-black text-amber-400">Sovereign Guard</h4>
+                  <p className="text-[10px] text-amber-350 leading-normal font-medium">Self-hosted offline vector retrieval if cloud gateways fail.</p>
+                </div>
+              </div>
               
               <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center items-center">
                 <button
@@ -260,13 +279,13 @@ export default function Home() {
                       alert("Failed to start new conversation session.");
                     }
                   }}
-                  className="px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-premium shadow-md hover:shadow-lg cursor-pointer min-w-[200px]"
+                  className="px-6 py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-premium shadow-md hover:shadow-lg hover:shadow-purple-500/20 cursor-pointer min-w-[200px]"
                 >
                   Create New Chat
                 </button>
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="px-6 py-3.5 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-black uppercase tracking-wider rounded-xl transition-premium shadow-sm hover:shadow-md cursor-pointer min-w-[200px]"
+                  className="px-6 py-3.5 bg-slate-900/60 border border-slate-700/60 text-slate-200 hover:text-white text-xs font-black uppercase tracking-wider rounded-xl transition-premium shadow-sm hover:shadow-md cursor-pointer min-w-[200px] hover:bg-slate-800/60"
                 >
                   View Chat History
                 </button>
