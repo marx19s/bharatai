@@ -1,15 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DocumentSidebar from "../components/DocumentSidebar";
 import ChatInterface from "../components/ChatInterface";
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export default function Home() {
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSidebarOpen(window.matchMedia("(min-width: 768px)").matches);
+  }, []);
 
   const handleRefreshSidebar = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -30,7 +35,18 @@ export default function Home() {
       )}
 
       {/* Left Sidebar showing Conversation History Sessions */}
-      <div className={`shrink-0 overflow-hidden ${sidebarOpen ? "w-80" : "w-0 pointer-events-none"}`}>
+      {sidebarOpen && (
+        <button
+          className="fixed inset-0 z-30 bg-slate-950/20 backdrop-blur-[1px] md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Close sidebar overlay"
+        />
+      )}
+      <div className={`shrink-0 overflow-hidden transition-[width] duration-300 z-40 md:relative ${
+        sidebarOpen
+          ? "fixed md:static left-0 top-0 h-full w-80 max-w-[86vw]"
+          : "w-0 pointer-events-none"
+      }`}>
         <DocumentSidebar
           activeConversationId={activeConversationId}
           onSelectConversation={setActiveConversationId}

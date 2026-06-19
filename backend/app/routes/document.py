@@ -2,11 +2,17 @@ import os
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.db import get_db, DocumentMetadata
+from app.config import settings
 from app.services.storage_service import storage_service
 from app.services.pdf_service import pdf_service
 from app.services.ai_service import ai_service
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
+
+ALLOWED_PDF_CONTENT_TYPES = {
+    "application/pdf",
+    "application/x-pdf",
+}
 
 def process_pdf_background(doc_id: int, file_path: str):
     """Background task to extract text, summarize, and translate to Punjabi with error-resilience."""
@@ -65,20 +71,37 @@ def upload_document(
     db: Session = Depends(get_db)
 ):
     """Uploads a PDF, saves it, extracts text, and kicks off AI processing."""
-    if not file.filename.endswith(".pdf"):
+    filename = file.filename or ""
+    if not filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    if file.content_type and file.content_type not in ALLOWED_PDF_CONTENT_TYPES:
+        raise HTTPException(status_code=400, detail="Upload rejected: file must be a PDF")
         
     try:
         # Read contents
         contents = file.file.read()
         file_size = len(contents)
+        max_bytes = settings.MAX_FILE_SIZE_MB * 1024 * 1024
+
+        if file_size == 0:
+            raise HTTPException(status_code=400, detail="Upload rejected: PDF is empty")
+
+        if file_size > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Upload rejected: PDF must be {settings.MAX_FILE_SIZE_MB}MB or smaller"
+            )
+
+        if not contents.startswith(b"%PDF"):
+            raise HTTPException(status_code=400, detail="Upload rejected: invalid PDF signature")
         
         # Save to local cloud storage simulator
-        storage_path = storage_service.save_file(file.filename, contents)
+        storage_path = storage_service.save_file(filename, contents)
         
         # Create database entry
         doc_metadata = DocumentMetadata(
-            filename=file.filename,
+            filename=filename,
             storage_path=storage_path,
             file_size=file_size,
             status="processing"
@@ -100,6 +123,8 @@ def upload_document(
             "status": doc_metadata.status,
             "message": "File uploaded successfully. Processing started in the background."
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 

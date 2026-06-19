@@ -1,9 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.db import init_db
 from app.routes import chat, document, tools
 from app.config import settings
+from app.services.rate_limit_service import rate_limiter
 import os
 
 # Initialize DB tables
@@ -32,10 +34,45 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+RATE_LIMITED_PREFIXES = (
+    "/api/chat",
+    "/api/documents/upload",
+    "/api/tools/translate",
+    "/api/tools/grammar-fix",
+)
+
+
+@app.middleware("http")
+async def public_beta_rate_limit(request: Request, call_next):
+    if request.url.path.startswith(RATE_LIMITED_PREFIXES):
+        forwarded_for = request.headers.get("x-forwarded-for", "")
+        client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else None
+        key = client_ip or (request.client.host if request.client else "unknown")
+        allowed, remaining = rate_limiter.allow(
+            key=f"{key}:{request.url.path}",
+            limit=settings.FREE_REQUESTS_PER_DAY,
+            window_seconds=24 * 60 * 60,
+        )
+        if not allowed:
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "detail": f"Daily free beta limit reached ({settings.FREE_REQUESTS_PER_DAY} requests). Please try again tomorrow."
+                },
+                headers={"X-RateLimit-Remaining": "0"},
+            )
+
+        response = await call_next(request)
+        response.headers["X-RateLimit-Remaining"] = str(remaining)
+        return response
+
+    return await call_next(request)
 
 # Register routers
 app.include_router(chat.router, prefix="/api")

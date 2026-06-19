@@ -27,7 +27,6 @@ export default function DocumentSidebar({
   apiBaseUrl,
   refreshTrigger,
   onRefreshSidebar,
-  sidebarOpen,
   setSidebarOpen
 }: DocumentSidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -49,7 +48,7 @@ export default function DocumentSidebar({
       setConversations(prev => prev.map(c => c.id === convId ? { ...c, title: editingTitle.trim() } : c));
       setEditingConvId(null);
       onRefreshSidebar();
-    } catch (err) {
+    } catch {
       alert("Failed to save new conversation title.");
     }
   };
@@ -62,7 +61,7 @@ export default function DocumentSidebar({
       const data = await res.json();
       setConversations(data);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setError("Failed to fetch conversation history.");
     } finally {
@@ -71,6 +70,7 @@ export default function DocumentSidebar({
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchConversations();
   }, [refreshTrigger, activeConversationId]);
 
@@ -89,7 +89,7 @@ export default function DocumentSidebar({
       // Select the new conversation
       onSelectConversation(data.id);
       onRefreshSidebar();
-    } catch (err) {
+    } catch {
       alert("Failed to start new conversation session.");
     } finally {
       setLoading(false);
@@ -114,7 +114,7 @@ export default function DocumentSidebar({
       
       setConversations(prev => prev.filter(c => c.id !== convId));
       onRefreshSidebar();
-    } catch (err) {
+    } catch {
       alert("Failed to delete conversation.");
     }
   };
@@ -142,7 +142,7 @@ export default function DocumentSidebar({
             <span className="text-gradient-title">bharat</span><span className="text-gradient-orange">ai</span>
           </h1>
           <p className="text-[8px] text-slate-450 uppercase tracking-[0.22em] font-black mt-0.5">
-            India's Sovereign Workspace
+            India&apos;s Sovereign Workspace
           </p>
         </div>
         <button

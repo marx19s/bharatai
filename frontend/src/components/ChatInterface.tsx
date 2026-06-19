@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { 
-  Send, Mic, Globe, Sparkles, Search, MessageSquare, Trash2, 
+  Send, Mic, Globe, Sparkles, Search,
   ArrowUpRight, Paperclip, X, FileText, RefreshCw, AlertCircle, 
-  CheckCircle, BookOpen, Volume2, User, Menu, Smile, Edit2
+  CheckCircle, BookOpen, Volume2, Smile, Edit2
 } from "lucide-react";
 
 interface Message {
@@ -25,6 +25,25 @@ interface Document {
   created_at: string;
 }
 
+interface ConversationSummary {
+  id: number;
+  document_id: number | null;
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onstart: (() => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  onresult: ((event: { results: { [index: number]: { [index: number]: { transcript: string } } } }) => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
 interface ChatInterfaceProps {
   activeConversationId: number | null;
   onSelectConversation: (id: number | null) => void;
@@ -38,9 +57,7 @@ export default function ChatInterface({
   activeConversationId, 
   onSelectConversation, 
   apiBaseUrl,
-  onRefreshDocuments,
-  sidebarOpen,
-  setSidebarOpen
+  onRefreshDocuments
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -56,9 +73,33 @@ export default function ChatInterface({
     "Hindi", "Tamil", "Telugu", "Bengali", "Marathi", "Gujarati",
     "Kannada", "Malayalam", "Odia", "Punjabi", "Assamese", "Urdu", "Sanskrit"
   ];
+
+  const STARTER_PROMPTS = [
+    {
+      label: "Summarize PDF",
+      prompt: "Summarize this PDF in simple bullet points and create action items.",
+      icon: FileText
+    },
+    {
+      label: "Translate Punjabi",
+      prompt: "Translate this into Punjabi and keep the tone natural for Indian readers: ",
+      icon: Globe
+    },
+    {
+      label: "Search Schemes",
+      prompt: "Search the web and explain current Government schemes for students in Punjab with eligibility and links.",
+      icon: Search
+    },
+    {
+      label: "Create UPSC Notes",
+      prompt: "Create UPSC-style notes on Digital Public Infrastructure in India with examples and mains answer points.",
+      icon: BookOpen
+    }
+  ];
   
   // Document context loaded locally based on active conversation
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [mobileTab, setMobileTab] = useState<"chat" | "document">("chat");
   const [uploading, setUploading] = useState(false);
   const [activeSummaryTab, setActiveSummaryTab] = useState<"trace" | "summary" | "digitized" | "compliance">("trace");
   
@@ -77,7 +118,7 @@ export default function ChatInterface({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   // Auto-scroll
   const scrollToBottom = () => {
@@ -85,11 +126,14 @@ export default function ChatInterface({
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length > 0 || chatLoading) {
+      scrollToBottom();
+    }
   }, [messages, chatLoading]);
 
   // Load conversation details when activeConversationId changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDigitizedText(null);
     setComplianceReport(null);
     window.speechSynthesis.cancel();
@@ -116,7 +160,7 @@ export default function ChatInterface({
           const res = await fetch(`${apiBaseUrl}/api/conversations`);
           if (res.ok) {
             const conversations = await res.json();
-            const current = conversations.find((c: any) => c.id === activeConversationId);
+            const current = (conversations as ConversationSummary[]).find((c) => c.id === activeConversationId);
             
             if (current && current.document_id) {
               // Fetch document details
@@ -245,10 +289,23 @@ export default function ChatInterface({
     }
   };
 
+  const handleStarterPrompt = (prompt: string) => {
+    setInputText(prompt);
+    if (prompt.toLowerCase().includes("search")) {
+      setEnableSearch(true);
+    }
+  };
+
   // Handle PDF upload and link it to active conversation
   const handleFileUpload = async (file: File) => {
     if (!file.name.endsWith(".pdf")) {
       alert("Only PDF files are supported.");
+      return;
+    }
+
+    const maxUploadBytes = 10 * 1024 * 1024;
+    if (file.size > maxUploadBytes) {
+      alert("This PDF is too large for beta. Please upload a file under 10MB.");
       return;
     }
 
@@ -286,11 +343,12 @@ export default function ChatInterface({
       if (docDetailsRes.ok) {
         const docDetails = await docDetailsRes.json();
         setSelectedDoc(docDetails);
+        setMobileTab("document");
       }
 
       onRefreshDocuments();
-    } catch (err: any) {
-      alert(err.message || "An error occurred during file upload.");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "An error occurred during file upload.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -323,7 +381,11 @@ export default function ChatInterface({
 
   // Voice Input (Web Speech API)
   const toggleListening = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const browserWindow = window as Window & {
+      SpeechRecognition?: SpeechRecognitionConstructor;
+      webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    };
+    const SpeechRecognition = browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Voice input is not supported in this browser. Please use Chrome or Edge.");
       return;
@@ -352,7 +414,7 @@ export default function ChatInterface({
       setIsListening(false);
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       setInputText(prev => prev + (prev ? " " : "") + transcript);
     };
@@ -476,21 +538,6 @@ export default function ChatInterface({
     const sizes = ["Bytes", "KB", "MB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
-  const handleClearHistory = async () => {
-    if (!activeConversationId) return;
-    if (!confirm("Clear this conversation history?")) return;
-    try {
-      const res = await fetch(`${apiBaseUrl}/api/conversations/${activeConversationId}/messages`, {
-        method: "DELETE"
-      });
-      if (res.ok) {
-        setMessages([]);
-      }
-    } catch (err) {
-      console.error("Failed to clear chat history:", err);
-    }
   };
 
   const handleDigitize = async () => {
@@ -670,10 +717,7 @@ export default function ChatInterface({
   return (
     <div className="flex-1 h-full flex flex-col relative overflow-hidden">
       
-      {/* Cinematic Background Gradient Mesh Blobs (Bleeds through glass sidebar & panels) */}
-      <div className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-orange-400/22 to-amber-300/10 blur-[130px] pointer-events-none z-0 animate-blob-1" />
-      <div className="absolute top-[30%] left-[-15%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-indigo-300/18 to-purple-200/8 blur-[110px] pointer-events-none z-0 animate-blob-2" />
-      <div className="absolute bottom-[-10%] right-[15%] w-[450px] h-[450px] rounded-full bg-gradient-to-br from-pink-300/18 to-orange-200/8 blur-[100px] pointer-events-none z-0 animate-blob-3" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(248,250,252,0.54)_45%,rgba(255,247,237,0.38)_100%)] pointer-events-none z-0" />
 
       {/* Main Relative Container Wrapper */}
       <div className="flex-1 h-full flex flex-col relative z-10 bg-transparent">
@@ -691,13 +735,36 @@ export default function ChatInterface({
                   <span className="text-gradient-title">bharat</span><span className="text-gradient-orange">ai</span>
                 </h1>
                 <p className="text-[8px] text-slate-400 font-black tracking-[0.2em] uppercase mt-0.5">
-                  India's Sovereign Workspace
+                  India&apos;s Sovereign Workspace
                 </p>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {/* Clear Chat removed per user request */}
+            {selectedDoc && (
+              <div className="flex lg:hidden bg-slate-100 p-0.5 rounded-lg border border-slate-200/60 shadow-inner">
+                <button
+                  onClick={() => setMobileTab("chat")}
+                  className={`px-3 py-1.5 text-xs font-extrabold rounded-md transition-all cursor-pointer ${
+                    mobileTab === "chat"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Chat
+                </button>
+                <button
+                  onClick={() => setMobileTab("document")}
+                  className={`px-3 py-1.5 text-xs font-extrabold rounded-md transition-all cursor-pointer ${
+                    mobileTab === "document"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Document
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
@@ -705,87 +772,66 @@ export default function ChatInterface({
         <div className="flex-1 flex overflow-hidden">
           
           {/* Left Side: Chat Workspace */}
-          <div className={`h-full flex flex-col min-w-0 ${selectedDoc ? "w-[55%] border-r border-slate-200/30" : "w-full"}`}>
+          <div className={`h-full flex-col min-w-0 ${selectedDoc ? (mobileTab === "chat" ? "flex w-full lg:w-[55%] lg:border-r border-slate-200/30" : "hidden lg:flex lg:w-[55%] lg:border-r border-slate-200/30") : "w-full flex"}`}>
             
             {/* Main Chat Workspace feed */}
-            <div className="flex-1 overflow-y-auto scroll-smooth-premium p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto scroll-smooth-premium p-4 md:p-6 space-y-6">
               <div className="max-w-3xl mx-auto space-y-6">
                 
                 {/* Welcome Screen Dashboard when conversation is empty */}
                 {messages.length === 0 && (
-                  <div className="py-12 text-center space-y-8 animate-float">
-                    <div className="space-y-4 max-w-2xl mx-auto">
-                      <span className="px-3.5 py-1.5 bg-orange-100/40 text-orange-700 font-black text-[9px] uppercase tracking-[0.18em] rounded-full border border-orange-200/30 shadow-sm">
-                        India's Sovereign AI Platform
+                  <div className="pt-6 pb-8 md:pt-8 md:pb-12 space-y-8">
+                    <div className="space-y-5 max-w-3xl mx-auto">
+                      <span className="inline-flex px-3.5 py-1.5 bg-orange-50 text-orange-700 font-black text-[9px] uppercase tracking-[0.18em] rounded-full border border-orange-200/60 shadow-sm">
+                        India-first AI workspace
                       </span>
-                      <h2 className="text-5xl md:text-6.5xl font-black tracking-tight text-slate-900 font-display mt-3 leading-[1.12]">
-                        AI for all <span className="text-gradient-orange">from India</span>
-                      </h2>
-                      <p className="text-slate-555 text-sm md:text-base max-w-md mx-auto leading-relaxed font-medium mt-2">
-                        Built on sovereign compute. Powered by frontier-class models. Delivering population-scale impact.
-                      </p>
+                      <div className="space-y-4">
+                        <h2 className="text-3xl sm:text-4xl md:text-[42px] font-black tracking-tight text-slate-950 font-display leading-tight max-w-2xl">
+                          Search the web, analyze PDFs, translate Indian languages, and create notes in one place.
+                        </h2>
+                        <p className="text-slate-600 text-sm md:text-base max-w-xl leading-relaxed font-medium">
+                          Built for students, professionals, and small teams who need local language support, document intelligence, and source-backed research without switching tools.
+                        </p>
+                      </div>
 
-                      {/* Call to action pill buttons mimicking Sarvam website */}
-                      <div className="flex items-center justify-center gap-4 pt-4">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 max-w-3xl">
+                        {STARTER_PROMPTS.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <button
+                              key={item.label}
+                              onClick={() => handleStarterPrompt(item.prompt)}
+                              className="min-h-24 p-3.5 rounded-lg border border-slate-200 bg-white/80 hover:bg-white hover:border-orange-200 text-left transition-premium shadow-sm cursor-pointer"
+                            >
+                              <Icon className="w-4 h-4 text-orange-600 mb-3" />
+                              <span className="block text-xs font-black text-slate-900">{item.label}</span>
+                              <span className="block text-[10px] leading-relaxed text-slate-500 mt-1">
+                                Tap to draft
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <button
                           onClick={() => fileInputRef.current?.click()}
-                          className="px-7 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-full transition-premium cursor-pointer shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                          className="px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition-premium cursor-pointer shadow-md flex items-center justify-center gap-2"
                         >
-                          Upload PDF Document
+                          <Paperclip className="w-4 h-4" />
+                          Upload PDF
                         </button>
                         <button
                           onClick={() => setEnableSearch(!enableSearch)}
-                          className={`px-7 py-3.5 text-xs font-bold rounded-full border transition-premium cursor-pointer hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 ${
+                          className={`px-5 py-3 text-xs font-bold rounded-lg border transition-premium cursor-pointer flex items-center justify-center gap-2 ${
                             enableSearch
                               ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm"
-                              : "bg-white/70 border-slate-200 text-slate-700 hover:bg-white"
+                              : "bg-white/80 border-slate-200 text-slate-700 hover:bg-white"
                           }`}
                         >
-                          {enableSearch ? "Web Search Active" : "Enable Web Search"}
+                          <Search className="w-4 h-4" />
+                          {enableSearch ? "Web Search On" : "Enable Web Search"}
                         </button>
-                      </div>
-                    </div>
-
-                    {/* Suggestion Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-2xl mx-auto pt-8">
-                      <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-6 rounded-3xl glass-card hover:border-orange-305 hover:shadow-lg hover:shadow-orange-200/10 cursor-pointer transition-premium text-left space-y-3 group"
-                      >
-                        <div className="w-10 h-10 rounded-2xl bg-orange-100/50 border border-orange-200/30 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-premium duration-300">
-                          <Paperclip className="w-5 h-5" />
-                        </div>
-                        <h4 className="text-xs font-bold text-slate-805 font-display">Attach PDF Document</h4>
-                        <p className="text-[10px] text-slate-450 leading-relaxed font-medium">
-                          Attach files inline to summarize, answer context-specific questions and run compliance audits.
-                        </p>
-                      </div>
-                      
-                      <div 
-                        onClick={() => setEnableSearch(!enableSearch)}
-                        className={`p-6 rounded-3xl glass-card cursor-pointer transition-premium text-left space-y-3 group ${
-                          enableSearch 
-                            ? "border-indigo-400 bg-indigo-50/40 shadow-lg shadow-indigo-100/20" 
-                            : "hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-200/10"
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-2xl bg-indigo-100/50 border border-indigo-200/30 flex items-center justify-center text-indigo-650 group-hover:scale-110 transition-premium duration-300">
-                          <Search className="w-5 h-5" />
-                        </div>
-                        <h4 className="text-xs font-bold text-slate-805 font-display">Search Web Toggle</h4>
-                        <p className="text-[10px] text-slate-450 leading-relaxed font-medium">
-                          Retrieve real-time factual events, query search engines, and cite reference sources automatically.
-                        </p>
-                      </div>
-
-                      <div className="p-6 rounded-3xl glass-card hover:border-pink-300 hover:shadow-lg hover:shadow-pink-200/10 text-left space-y-3 group transition-premium cursor-pointer">
-                        <div className="w-10 h-10 rounded-2xl bg-pink-100/50 border border-pink-200/30 flex items-center justify-center text-pink-500 group-hover:scale-110 transition-premium duration-300">
-                          <Globe className="w-5 h-5" />
-                        </div>
-                        <h4 className="text-xs font-bold text-slate-805 font-display">Multilingual Tools</h4>
-                        <p className="text-[10px] text-slate-450 leading-relaxed font-medium">
-                          Type or dictate messages to translate instantly to Punjabi script or check grammar natively.
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -928,15 +974,15 @@ export default function ChatInterface({
             </div>
 
             {/* Input Work Area Panel: pinned to bottom, layout-contained */}
-            <div className="p-6 bg-white/40 backdrop-blur-md shrink-0 z-20 border-t border-slate-200/20" style={{ contain: "layout" }}>
+            <div className="p-3 md:p-6 bg-white/40 backdrop-blur-md shrink-0 z-20 border-t border-slate-200/20" style={{ contain: "layout" }}>
               <div className="max-w-3xl mx-auto flex flex-col gap-3">
                 
                 {/* Quick Actions row */}
-                <div className="flex items-center justify-between px-1">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 px-1">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
                     <button
                       onClick={() => setEnableSearch(!enableSearch)}
-                      className={`py-1.5 px-4 rounded-full border text-xs font-bold flex items-center gap-2 transition-premium cursor-pointer shadow-sm ${
+                      className={`py-1.5 px-3 rounded-lg border text-xs font-bold flex items-center gap-2 transition-premium cursor-pointer shadow-sm shrink-0 ${
                         enableSearch
                           ? "bg-indigo-50/70 border-indigo-200 text-indigo-750 shadow-sm"
                           : "bg-white/80 border-slate-200 text-slate-605 hover:text-slate-800 hover:border-slate-300"
@@ -947,11 +993,11 @@ export default function ChatInterface({
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
                     <button
                       onClick={handleFixGrammar}
                       disabled={!inputText.trim() || grammarFixing}
-                      className="py-1.5 px-4 rounded-full border border-slate-200/80 bg-white/80 text-[10px] font-bold uppercase tracking-wider text-slate-655 hover:text-indigo-600 hover:border-indigo-200 transition-premium flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-sm"
+                      className="py-1.5 px-3 rounded-lg border border-slate-200/80 bg-white/80 text-[10px] font-bold uppercase tracking-wider text-slate-655 hover:text-indigo-600 hover:border-indigo-200 transition-premium flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
                     >
                       {grammarFixing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-indigo-500" />}
                       <span>Fix Grammar</span>
@@ -961,7 +1007,7 @@ export default function ChatInterface({
                       <select
                         value={selectedLanguage}
                         onChange={(e) => setSelectedLanguage(e.target.value)}
-                        className="py-1.5 px-2 rounded-l-full border border-r-0 border-slate-200/80 bg-white/80 text-[10px] font-bold text-slate-655 outline-none focus:border-pink-300 transition-premium cursor-pointer shadow-sm"
+                        className="py-1.5 px-2 rounded-l-lg border border-r-0 border-slate-200/80 bg-white/80 text-[10px] font-bold text-slate-655 outline-none focus:border-pink-300 transition-premium cursor-pointer shadow-sm"
                       >
                         {INDIAN_LANGUAGES.map(lang => (
                           <option key={lang} value={lang}>{lang}</option>
@@ -970,7 +1016,7 @@ export default function ChatInterface({
                       <button
                         onClick={() => handleTranslateInput()}
                         disabled={!inputText.trim() || translatingInput}
-                        className="py-1.5 px-3 rounded-r-full border border-slate-200/80 bg-white/80 text-[10px] font-bold uppercase tracking-wider text-slate-655 hover:text-pink-600 hover:border-pink-200 transition-premium flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-sm"
+                        className="py-1.5 px-3 rounded-r-lg border border-slate-200/80 bg-white/80 text-[10px] font-bold uppercase tracking-wider text-slate-655 hover:text-pink-600 hover:border-pink-200 transition-premium flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
                       >
                         {translatingInput ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5 text-pink-500" />}
                         <span>Translate</span>
@@ -995,7 +1041,7 @@ export default function ChatInterface({
                 )}
 
                 {/* Core Input box card */}
-                <div className="flex items-end gap-3 glass-input rounded-3xl p-3.5 focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-50/50 transition-premium shadow-xl">
+                <div className="flex items-end gap-2 md:gap-3 glass-input rounded-xl p-2.5 md:p-3.5 focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-50/50 transition-premium shadow-xl">
                   
                   {/* Hidden native input and Paperclip trigger */}
                   <input
@@ -1009,7 +1055,7 @@ export default function ChatInterface({
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className={`p-3 rounded-2xl transition-premium shrink-0 cursor-pointer ${
+                    className={`p-2.5 md:p-3 rounded-lg transition-premium shrink-0 cursor-pointer ${
                       uploading 
                         ? "bg-slate-100 text-indigo-650 animate-pulse" 
                         : "bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 border border-slate-200/60 shadow-sm"
@@ -1022,7 +1068,7 @@ export default function ChatInterface({
                   {/* Voice dictate mic trigger */}
                   <button
                     onClick={toggleListening}
-                    className={`p-3 rounded-2xl transition-premium shrink-0 cursor-pointer ${
+                    className={`p-2.5 md:p-3 rounded-lg transition-premium shrink-0 cursor-pointer ${
                       isListening
                         ? "bg-rose-600 text-white animate-pulse"
                         : "bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 border border-slate-200/60 shadow-sm"
@@ -1053,14 +1099,14 @@ export default function ChatInterface({
                     }
                     disabled={uploading}
                     rows={1}
-                    className="flex-1 resize-none bg-transparent outline-none border-none text-slate-800 placeholder-slate-400 text-sm max-h-32 py-2 px-1 focus:ring-0 disabled:opacity-50"
+                    className="flex-1 min-w-0 resize-none bg-transparent outline-none border-none text-slate-800 placeholder-slate-400 text-sm max-h-32 py-2 px-1 focus:ring-0 disabled:opacity-50"
                   />
 
                   {/* Send Message */}
                   <button
                     onClick={() => handleSend()}
                     disabled={!inputText.trim() || chatLoading || uploading}
-                    className="p-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl transition-premium disabled:opacity-40 shrink-0 shadow-md cursor-pointer hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                    className="p-2.5 md:p-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-premium disabled:opacity-40 shrink-0 shadow-md cursor-pointer hover:shadow-lg active:translate-y-0"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -1071,7 +1117,7 @@ export default function ChatInterface({
 
           {/* Right Side: Agent Observability & Document Intelligence Dashboard */}
           {selectedDoc && (
-            <div className="w-[45%] h-full flex flex-col bg-white/30 backdrop-blur-lg overflow-hidden border-l border-slate-200/50 z-20 animate-slide-in-right">
+            <div className={`w-full lg:w-[45%] h-full flex-col bg-white/30 backdrop-blur-lg overflow-hidden lg:border-l border-slate-200/50 z-20 animate-slide-in-right ${mobileTab === "document" ? "flex" : "hidden lg:flex"}`}>
               
               {/* Header */}
               <div className="p-6 border-b border-slate-200/30 flex items-start justify-between bg-white/40 shrink-0">

@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
 
+    # Public beta guardrails
+    FREE_REQUESTS_PER_DAY: int = 100
+    CORS_ORIGIN_REGEX: str | None = r"https://.*\.trycloudflare\.com"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
