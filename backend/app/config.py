@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Public beta guardrails
     FREE_REQUESTS_PER_DAY: int = 100
-    CORS_ORIGIN_REGEX: str | None = r"https://.*\.trycloudflare\.com"
+    CORS_ORIGIN_REGEX: str | None = None
 
     class Config:
         env_file = ".env"

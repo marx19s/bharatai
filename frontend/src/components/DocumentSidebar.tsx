@@ -19,6 +19,8 @@ interface DocumentSidebarProps {
   onRefreshSidebar: () => void;
   sidebarOpen: boolean;
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  token: string | null;
+  onLogout: () => void;
 }
 
 export default function DocumentSidebar({
@@ -27,7 +29,9 @@ export default function DocumentSidebar({
   apiBaseUrl,
   refreshTrigger,
   onRefreshSidebar,
-  setSidebarOpen
+  setSidebarOpen,
+  token,
+  onLogout
 }: DocumentSidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +44,10 @@ export default function DocumentSidebar({
     try {
       const res = await fetch(`${apiBaseUrl}/api/conversations/${convId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ title: editingTitle.trim() })
       });
       if (!res.ok) throw new Error("Failed to rename conversation");
@@ -55,8 +62,13 @@ export default function DocumentSidebar({
 
   // Fetch past conversations
   const fetchConversations = async () => {
+    if (!token) return;
     try {
-      const res = await fetch(`${apiBaseUrl}/api/conversations`);
+      const res = await fetch(`${apiBaseUrl}/api/conversations`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
       if (!res.ok) throw new Error("Failed to fetch conversations");
       const data = await res.json();
       setConversations(data);
@@ -72,7 +84,7 @@ export default function DocumentSidebar({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchConversations();
-  }, [refreshTrigger, activeConversationId]);
+  }, [refreshTrigger, activeConversationId, token]);
 
   // Handle new conversation creation
   const handleNewConversation = async () => {
@@ -80,7 +92,10 @@ export default function DocumentSidebar({
     try {
       const res = await fetch(`${apiBaseUrl}/api/conversations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ document_id: null })
       });
       if (!res.ok) throw new Error("Failed to create conversation");
@@ -88,6 +103,12 @@ export default function DocumentSidebar({
       
       // Select the new conversation
       onSelectConversation(data.id);
+      
+      // Auto-collapse sidebar on mobile screen ratios
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      }
+      
       onRefreshSidebar();
     } catch {
       alert("Failed to start new conversation session.");
@@ -104,6 +125,9 @@ export default function DocumentSidebar({
     try {
       const res = await fetch(`${apiBaseUrl}/api/conversations/${convId}`, {
         method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
 
       if (!res.ok) throw new Error("Delete failed");
@@ -142,7 +166,7 @@ export default function DocumentSidebar({
             <span className="text-gradient-title">bharat</span><span className="text-gradient-orange">ai</span>
           </h1>
           <p className="text-[8px] text-slate-450 uppercase tracking-[0.22em] font-black mt-0.5">
-            India&apos;s Sovereign Workspace
+            India{"'"}s Sovereign Workspace
           </p>
         </div>
         <button
@@ -196,7 +220,12 @@ export default function DocumentSidebar({
             <div
               key={conv.id}
               onClick={() => {
-                if (!isEditing) onSelectConversation(conv.id);
+                if (!isEditing) {
+                  onSelectConversation(conv.id);
+                  if (window.innerWidth < 768) {
+                    setSidebarOpen(false);
+                  }
+                }
               }}
               className={`p-3.5 rounded-2xl cursor-pointer border transition-premium group relative overflow-hidden ${
                 isSelected
@@ -208,7 +237,7 @@ export default function DocumentSidebar({
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-500 to-indigo-600 rounded-r" />
               )}
               <div className="flex items-start gap-3 pl-1">
-                <div className={`p-2.5 rounded-xl shrink-0 transition-premium ${isSelected ? "bg-orange-50 text-orange-600 border border-orange-100/50" : "bg-slate-100/50 text-slate-400 group-hover:text-slate-500"}`}>
+                <div className={`p-2.5 rounded-xl shrink-0 transition-premium ${isSelected ? "bg-orange-55 text-orange-600 border border-orange-100/50" : "bg-slate-100/50 text-slate-400 group-hover:text-slate-500"}`}>
                   <MessageSquare className="w-4.5 h-4.5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -289,6 +318,23 @@ export default function DocumentSidebar({
             </div>
           );
         })}
+      </div>
+      {/* User Session Info & Logout */}
+      <div className="p-4 border-t border-slate-200/30 bg-slate-50/50 flex flex-col gap-2 shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Account</p>
+            <p className="text-xs font-bold text-slate-700 truncate max-w-[160px]">
+              {typeof window !== "undefined" ? localStorage.getItem("bharatai_email") || "you@domain.com" : "you@domain.com"}
+            </p>
+          </div>
+          <button
+            onClick={onLogout}
+            className="px-3 py-1.5 bg-slate-905 hover:bg-slate-800 text-white rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition-premium shadow-sm shrink-0"
+          >
+            Log Out
+          </button>
+        </div>
       </div>
     </aside>
   );

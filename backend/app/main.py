@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.db import init_db
-from app.routes import chat, document, tools
+from app.routes import chat, document, tools, auth
 from app.config import settings
 from app.services.rate_limit_service import rate_limiter
 import os
@@ -27,17 +27,23 @@ app.mount("/storage", StaticFiles(directory=settings.STORAGE_DIR), name="storage
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://192.168.1.18:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
 ]
 
+cors_kwargs = {
+    "allow_origins": origins,
+    "allow_credentials": True,
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
+if settings.CORS_ORIGIN_REGEX:
+    cors_kwargs["allow_origin_regex"] = settings.CORS_ORIGIN_REGEX
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=settings.CORS_ORIGIN_REGEX,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    **cors_kwargs
 )
 
 RATE_LIMITED_PREFIXES = (
@@ -75,6 +81,7 @@ async def public_beta_rate_limit(request: Request, call_next):
     return await call_next(request)
 
 # Register routers
+app.include_router(auth.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(document.router, prefix="/api")
 app.include_router(tools.router, prefix="/api")

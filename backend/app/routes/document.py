@@ -6,6 +6,7 @@ from app.config import settings
 from app.services.storage_service import storage_service
 from app.services.pdf_service import pdf_service
 from app.services.ai_service import ai_service
+from app.services.auth_service import auth_service
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -68,6 +69,7 @@ def process_pdf_background(doc_id: int, file_path: str):
 def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    user_id: int = Depends(auth_service.get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """Uploads a PDF, saves it, extracts text, and kicks off AI processing."""
@@ -129,7 +131,10 @@ def upload_document(
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 @router.get("")
-def list_documents(db: Session = Depends(get_db)):
+def list_documents(
+    user_id: int = Depends(auth_service.get_current_user_id),
+    db: Session = Depends(get_db)
+):
     """Lists all uploaded documents."""
     docs = db.query(DocumentMetadata).order_by(DocumentMetadata.created_at.desc()).all()
     return [
@@ -145,7 +150,11 @@ def list_documents(db: Session = Depends(get_db)):
     ]
 
 @router.get("/{doc_id}")
-def get_document(doc_id: int, db: Session = Depends(get_db)):
+def get_document(
+    doc_id: int, 
+    user_id: int = Depends(auth_service.get_current_user_id),
+    db: Session = Depends(get_db)
+):
     """Retrieves metadata and summaries for a specific document."""
     doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
     if not doc:
@@ -162,7 +171,11 @@ def get_document(doc_id: int, db: Session = Depends(get_db)):
     }
 
 @router.delete("/{doc_id}")
-def delete_document(doc_id: int, db: Session = Depends(get_db)):
+def delete_document(
+    doc_id: int, 
+    user_id: int = Depends(auth_service.get_current_user_id),
+    db: Session = Depends(get_db)
+):
     """Deletes a document record and its file on disk."""
     doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
     if not doc:
@@ -178,7 +191,11 @@ def delete_document(doc_id: int, db: Session = Depends(get_db)):
     return {"status": "success", "message": f"Document {doc_id} deleted."}
 
 @router.post("/{doc_id}/digitize")
-def digitize_document_endpoint(doc_id: int, db: Session = Depends(get_db)):
+def digitize_document_endpoint(
+    doc_id: int, 
+    user_id: int = Depends(auth_service.get_current_user_id),
+    db: Session = Depends(get_db)
+):
     """Digitizes an uploaded PDF using Gemini multimodal OCR (preserving layout and Indic scripts)."""
     doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
     if not doc:
@@ -191,7 +208,12 @@ def digitize_document_endpoint(doc_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Digitization failed: {str(e)}")
 
 @router.post("/{doc_id}/compliance")
-def compliance_audit_endpoint(doc_id: int, preset: str, db: Session = Depends(get_db)):
+def compliance_audit_endpoint(
+    doc_id: int, 
+    preset: str, 
+    user_id: int = Depends(auth_service.get_current_user_id),
+    db: Session = Depends(get_db)
+):
     """Runs a regulatory compliance audit scorecard on the document against IRDAI/DPDP frameworks."""
     doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
     if not doc:

@@ -51,6 +51,7 @@ interface ChatInterfaceProps {
   onRefreshDocuments: () => void;
   sidebarOpen: boolean;
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  token: string | null;
 }
 
 export default function ChatInterface({ 
@@ -58,7 +59,9 @@ export default function ChatInterface({
   onSelectConversation, 
   apiBaseUrl,
   onRefreshDocuments,
-  sidebarOpen
+  sidebarOpen,
+  setSidebarOpen,
+  token
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -144,7 +147,9 @@ export default function ChatInterface({
       // 1. Fetch messages
       const loadHistory = async () => {
         try {
-          const res = await fetch(`${apiBaseUrl}/api/conversations/${activeConversationId}/messages`);
+          const res = await fetch(`${apiBaseUrl}/api/conversations/${activeConversationId}/messages`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
           if (res.ok) {
             const data = await res.json();
             setMessages(data);
@@ -158,14 +163,18 @@ export default function ChatInterface({
       // 2. Fetch conversation metadata to find attached document ID
       const loadMetadata = async () => {
         try {
-          const res = await fetch(`${apiBaseUrl}/api/conversations`);
+          const res = await fetch(`${apiBaseUrl}/api/conversations`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
           if (res.ok) {
             const conversations = await res.json();
             const current = (conversations as ConversationSummary[]).find((c) => c.id === activeConversationId);
             
             if (current && current.document_id) {
               // Fetch document details
-              const docRes = await fetch(`${apiBaseUrl}/api/documents/${current.document_id}`);
+              const docRes = await fetch(`${apiBaseUrl}/api/documents/${current.document_id}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+              });
               if (docRes.ok) {
                 const docDetails = await docRes.json();
                 setSelectedDoc(docDetails);
@@ -184,15 +193,17 @@ export default function ChatInterface({
       setMessages([]);
       setSelectedDoc(null);
     }
-  }, [activeConversationId]);
+  }, [activeConversationId, token]);
 
   // Background status polling for active document
   useEffect(() => {
-    if (!selectedDoc || selectedDoc.status !== "processing") return;
+    if (!selectedDoc || selectedDoc.status !== "processing" || !token) return;
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${apiBaseUrl}/api/documents/${selectedDoc.id}`);
+        const res = await fetch(`${apiBaseUrl}/api/documents/${selectedDoc.id}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
         if (res.ok) {
           const updated = await res.json();
           if (updated.status !== "processing") {
@@ -207,7 +218,7 @@ export default function ChatInterface({
     }, 2500);
 
     return () => clearInterval(interval);
-  }, [selectedDoc?.id, selectedDoc?.status]);
+  }, [selectedDoc?.id, selectedDoc?.status, token]);
 
   // Ensure active conversation session exists before operations
   const ensureConversation = async (): Promise<number> => {
@@ -216,7 +227,10 @@ export default function ChatInterface({
     try {
       const res = await fetch(`${apiBaseUrl}/api/conversations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ document_id: null })
       });
       if (!res.ok) throw new Error("Failed to create conversation session");
@@ -252,7 +266,10 @@ export default function ChatInterface({
 
       const response = await fetch(`${apiBaseUrl}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           message: text,
           conversation_id: convId,
@@ -321,6 +338,9 @@ export default function ChatInterface({
       formData.append("file", file);
       const res = await fetch(`${apiBaseUrl}/api/documents/upload`, {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
         body: formData,
       });
 
@@ -334,13 +354,20 @@ export default function ChatInterface({
       // 2. Associate document with active conversation
       const attachRes = await fetch(`${apiBaseUrl}/api/conversations/${convId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ document_id: docData.id })
       });
       if (!attachRes.ok) throw new Error("Failed to bind document to conversation");
 
       // 3. Fetch full document details for UI
-      const docDetailsRes = await fetch(`${apiBaseUrl}/api/documents/${docData.id}`);
+      const docDetailsRes = await fetch(`${apiBaseUrl}/api/documents/${docData.id}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
       if (docDetailsRes.ok) {
         const docDetails = await docDetailsRes.json();
         setSelectedDoc(docDetails);
@@ -368,7 +395,10 @@ export default function ChatInterface({
     try {
       const res = await fetch(`${apiBaseUrl}/api/conversations/${activeConversationId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ document_id: -1 }) // -1 signals detach
       });
       if (res.ok) {
@@ -432,7 +462,10 @@ export default function ChatInterface({
     
     try {
       const res = await fetch(`${apiBaseUrl}/api/conversations/${activeConversationId}/messages/last`, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
       if (res.ok) {
         // Find index of the last user message
@@ -463,7 +496,10 @@ export default function ChatInterface({
     try {
       const res = await fetch(`${apiBaseUrl}/api/tools/grammar-fix`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ text: inputText }),
       });
       if (res.ok) {
@@ -484,7 +520,10 @@ export default function ChatInterface({
     try {
       const res = await fetch(`${apiBaseUrl}/api/tools/translate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ text: inputText, target_language: targetLang }),
       });
       if (res.ok) {
@@ -508,7 +547,10 @@ export default function ChatInterface({
       
       const res = await fetch(`${apiBaseUrl}/api/tools/translate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ text: originalText, target_language: targetLang }),
       });
       if (res.ok) {
@@ -547,7 +589,10 @@ export default function ChatInterface({
     setActiveSummaryTab("digitized");
     try {
       const res = await fetch(`${apiBaseUrl}/api/documents/${selectedDoc.id}/digitize`, {
-        method: "POST"
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
       if (res.ok) {
         const data = await res.json();
@@ -569,7 +614,10 @@ export default function ChatInterface({
     setActiveSummaryTab("compliance");
     try {
       const res = await fetch(`${apiBaseUrl}/api/documents/${selectedDoc.id}/compliance?preset=${encodeURIComponent(preset)}`, {
-        method: "POST"
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
       if (res.ok) {
         const data = await res.json();

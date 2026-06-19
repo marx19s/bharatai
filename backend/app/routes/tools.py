@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.services.ai_service import ai_service
+from app.services.auth_service import auth_service
 
 router = APIRouter(prefix="/tools", tags=["Tools"])
 
@@ -19,7 +20,10 @@ class GrammarResponse(BaseModel):
     corrected_text: str
 
 @router.post("/translate", response_model=TranslateResponse)
-def translate_endpoint(request: TranslateRequest):
+def translate_endpoint(
+    request: TranslateRequest,
+    user_id: int = Depends(auth_service.get_current_user_id)
+):
     """Direct text translation endpoint."""
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
@@ -34,7 +38,10 @@ def translate_endpoint(request: TranslateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/grammar-fix", response_model=GrammarResponse)
-def grammar_fix_endpoint(request: GrammarRequest):
+def grammar_fix_endpoint(
+    request: GrammarRequest,
+    user_id: int = Depends(auth_service.get_current_user_id)
+):
     """Direct grammar correction endpoint."""
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
