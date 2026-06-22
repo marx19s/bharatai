@@ -52,7 +52,7 @@ interface SpeechRecognitionLike {
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
-const detectTranslationIntent = (text: string): boolean => {
+/* Legacy local translation responses are intentionally disabled.
   const t = text.toLowerCase().trim();
   const phrases = [
     "kive ho", "kiveho", "ki haal", "ki haal hai", "kem cho", "kemcho", "vanakkam", "namaste", "nomoshkar",
@@ -103,7 +103,7 @@ const getTranslationDetails = (text: string) => {
     hindi: cleaned ? `अनुवाद: ${cleaned}` : "नमस्ते, यार में आपका स्वागत है।",
     punjabi: cleaned ? `ਅਨੁਵਾਦ: ${cleaned}` : "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ, ਯਾਰ ਵਿੱਚ ਤੁਹਾਡਾ ਸਵਾਗਤ ਹੈ।"
   };
-};
+}; */
 
 const renderContentWithCitations = (content: string, searchResults: any[] | null | undefined) => {
   if (!searchResults || searchResults.length === 0) {
@@ -368,7 +368,7 @@ export default function ChatInterface({
     return localId;
   };
 
-  const getLocalCompanionResponse = (prompt: string, lang: string, vibe: string) => {
+  /* Legacy local chat responses are intentionally disabled.
     const p = prompt.toLowerCase();
     const name = localStorage.getItem("yaar_user_name") || "Dost";
     
@@ -438,7 +438,7 @@ export default function ChatInterface({
     if (p.includes("build") || p.includes("startup") || p.includes("founder")) return selectedDict.build;
 
     return selectedDict.default;
-  };
+  }; */
 
   const handleSend = async (textToSend = inputText) => {
     const text = textToSend.trim();
@@ -472,32 +472,6 @@ export default function ChatInterface({
     const convId = await ensureConversation();
     const localMsgKey = `yaar_messages_${convId}`;
     localStorage.setItem(localMsgKey, JSON.stringify(nextMessages));
-
-    if (detectTranslationIntent(text)) {
-      setTimeout(() => {
-        const transDetails = getTranslationDetails(text);
-        const newAssistantMessage: Message = {
-          id: Date.now(),
-          role: "assistant",
-          content: `English: ${transDetails.english}\nHindi: ${transDetails.hindi}\nPunjabi: ${transDetails.punjabi}`,
-          is_translation_card: true,
-          translation_data: {
-            english: transDetails.english,
-            hindi: transDetails.hindi,
-            punjabi: transDetails.punjabi,
-            sourceText: text
-          },
-          versions: [`English: ${transDetails.english}\nHindi: ${transDetails.hindi}\nPunjabi: ${transDetails.punjabi}`],
-          currentVersionIndex: 0
-        };
-        const updatedHistory = [...nextMessages, newAssistantMessage];
-        setMessages(updatedHistory);
-        localStorage.setItem(localMsgKey, JSON.stringify(updatedHistory));
-        setChatLoading(false);
-        onRefreshDocuments();
-      }, 500);
-      return;
-    }
 
     try {
       const response = await fetch(`${apiBaseUrl}/api/chat`, {
@@ -535,22 +509,18 @@ export default function ChatInterface({
       localStorage.setItem(localMsgKey, JSON.stringify(updatedHistory));
       onRefreshDocuments();
     } catch (err) {
-      console.error("Backend chat failed, falling back to local responder:", err);
-      // Simulate typing speed response
-      setTimeout(() => {
-        const localReply = getLocalCompanionResponse(text, userLang, userVibe);
-        const newAssistantMessage: Message = {
-          id: Date.now(),
-          role: "assistant",
-          content: localReply,
-          versions: [localReply],
-          currentVersionIndex: 0
-        };
-        const updatedHistory = [...nextMessages, newAssistantMessage];
-        setMessages(updatedHistory);
-        localStorage.setItem(localMsgKey, JSON.stringify(updatedHistory));
-        onRefreshDocuments();
-      }, 700);
+      console.error("Backend chat failed:", err);
+      const errorMessage = "I couldn't reach the AI service just now. Please check that the backend is running and try again.";
+      const newAssistantMessage: Message = {
+        id: Date.now(),
+        role: "assistant",
+        content: errorMessage,
+        versions: [errorMessage],
+        currentVersionIndex: 0
+      };
+      const updatedHistory = [...nextMessages, newAssistantMessage];
+      setMessages(updatedHistory);
+      localStorage.setItem(localMsgKey, JSON.stringify(updatedHistory));
     } finally {
       setChatLoading(false);
     }
@@ -727,32 +697,6 @@ export default function ChatInterface({
     const localMsgKey = `yaar_messages_${convId}`;
     localStorage.setItem(localMsgKey, JSON.stringify(nextMessages));
 
-    if (detectTranslationIntent(editingContent.trim())) {
-      setTimeout(() => {
-        const transDetails = getTranslationDetails(editingContent.trim());
-        const newAssistantMessage: Message = {
-          id: Date.now(),
-          role: "assistant",
-          content: `English: ${transDetails.english}\nHindi: ${transDetails.hindi}\nPunjabi: ${transDetails.punjabi}`,
-          is_translation_card: true,
-          translation_data: {
-            english: transDetails.english,
-            hindi: transDetails.hindi,
-            punjabi: transDetails.punjabi,
-            sourceText: editingContent.trim()
-          },
-          versions: [`English: ${transDetails.english}\nHindi: ${transDetails.hindi}\nPunjabi: ${transDetails.punjabi}`],
-          currentVersionIndex: 0
-        };
-        const updatedHistory = [...nextMessages, newAssistantMessage];
-        setMessages(updatedHistory);
-        localStorage.setItem(localMsgKey, JSON.stringify(updatedHistory));
-        setChatLoading(false);
-        onRefreshDocuments();
-      }, 500);
-      return;
-    }
-
     try {
       const response = await fetch(`${apiBaseUrl}/api/chat`, {
         method: "POST",
@@ -789,21 +733,18 @@ export default function ChatInterface({
       localStorage.setItem(localMsgKey, JSON.stringify(updatedHistory));
       onRefreshDocuments();
     } catch (e) {
-      console.error("Save edit backend failed, falling back to local responder:", e);
-      setTimeout(() => {
-        const localReply = getLocalCompanionResponse(editingContent.trim(), userLang, userVibe);
-        const newAssistantMessage: Message = {
-          id: Date.now(),
-          role: "assistant",
-          content: localReply,
-          versions: [localReply],
-          currentVersionIndex: 0
-        };
-        const updatedHistory = [...nextMessages, newAssistantMessage];
-        setMessages(updatedHistory);
-        localStorage.setItem(localMsgKey, JSON.stringify(updatedHistory));
-        onRefreshDocuments();
-      }, 700);
+      console.error("Save edit backend failed:", e);
+      const errorMessage = "I couldn't reach the AI service just now. Please check that the backend is running and try again.";
+      const newAssistantMessage: Message = {
+        id: Date.now(),
+        role: "assistant",
+        content: errorMessage,
+        versions: [errorMessage],
+        currentVersionIndex: 0
+      };
+      const updatedHistory = [...nextMessages, newAssistantMessage];
+      setMessages(updatedHistory);
+      localStorage.setItem(localMsgKey, JSON.stringify(updatedHistory));
     } finally {
       setChatLoading(false);
     }
@@ -885,25 +826,8 @@ export default function ChatInterface({
       setMessages(updated);
       localStorage.setItem(localMsgKey, JSON.stringify(updated));
     } catch (e) {
-      console.error("Regenerate backend failed, falling back to local responder:", e);
-      setTimeout(() => {
-        const localReply = getLocalCompanionResponse(promptText, userLang, userVibe);
-        const updated = messages.map((m, i) => {
-          if (i === idx) {
-            const currentVersions = m.versions || [m.content];
-            const newVersions = [...currentVersions, localReply];
-            return {
-              ...m,
-              content: localReply,
-              versions: newVersions,
-              currentVersionIndex: newVersions.length - 1
-            };
-          }
-          return m;
-        });
-        setMessages(updated);
-        localStorage.setItem(localMsgKey, JSON.stringify(updated));
-      }, 700);
+      console.error("Regenerate backend failed:", e);
+      alert("I couldn't reach the AI service just now. Please check that the backend is running and try again.");
     } finally {
       setChatLoading(false);
     }
