@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
 from sqlalchemy.orm import Session
-from app.db import get_db, DocumentMetadata
+from app.db import get_db, DocumentRecord, DocumentSegment
 from app.config import settings
 from app.services.storage_service import storage_service
 from app.services.pdf_service import pdf_service
@@ -16,11 +16,11 @@ ALLOWED_PDF_CONTENT_TYPES = {
 }
 
 def process_pdf_background(doc_id: int, file_path: str):
-    """Background task to extract text, summarize, and translate to Punjabi with error-resilience."""
-    from app.db import SessionLocal
+    """Background task to extract text, chunk it, save chunks, summarize, and translate."""
+    from app.db import SessionLocal, DocumentRecord, DocumentSegment
     db = SessionLocal()
     try:
-        doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
+        doc = db.query(DocumentRecord).filter(DocumentRecord.id == doc_id).first()
         if not doc:
             return
             
@@ -29,6 +29,28 @@ def process_pdf_background(doc_id: int, file_path: str):
         if not text.strip():
             text = "[System Warning: This document appears to be a scanned image or empty. No digital text could be extracted. Please upload a digital text PDF, or chat with me using general knowledge.]"
             
+        # Perform clean chunking: chunks of 1000 characters, with 200 characters overlap
+        chunks = []
+        if text.strip() and not text.startswith("[System Warning"):
+            chunk_size = 1000
+            overlap = 200
+            start = 0
+            while start < len(text):
+                end = start + chunk_size
+                chunks.append(text[start:end])
+                start += chunk_size - overlap
+        else:
+            chunks = [text]
+
+        # Save chunks to database
+        for i, chunk_content in enumerate(chunks):
+            chunk_record = DocumentSegment(
+                document_id=doc_id,
+                chunk_index=i,
+                content=chunk_content
+            )
+            db.add(chunk_record)
+
         # Generate summary with API error-handling
         try:
             summary = ai_service.summarize_text(text)
@@ -56,7 +78,7 @@ def process_pdf_background(doc_id: int, file_path: str):
     except Exception as e:
         print(f"Background processing failed for doc {doc_id}: {e}")
         try:
-            doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
+            doc = db.query(DocumentRecord).filter(DocumentRecord.id == doc_id).first()
             if doc:
                 doc.status = "failed"
                 db.commit()
@@ -102,27 +124,27 @@ def upload_document(
         storage_path = storage_service.save_file(filename, contents)
         
         # Create database entry
-        doc_metadata = DocumentMetadata(
+        doc_record = DocumentRecord(
             filename=filename,
             storage_path=storage_path,
             file_size=file_size,
             status="processing"
         )
-        db.add(doc_metadata)
+        db.add(doc_record)
         db.commit()
-        db.refresh(doc_metadata)
+        db.refresh(doc_record)
         
         # Add background processing task for extracting, summarizing, and translating
         background_tasks.add_task(
             process_pdf_background, 
-            doc_metadata.id, 
+            doc_record.id, 
             storage_path
         )
         
         return {
-            "id": doc_metadata.id,
-            "filename": doc_metadata.filename,
-            "status": doc_metadata.status,
+            "id": doc_record.id,
+            "filename": doc_record.filename,
+            "status": doc_record.status,
             "message": "File uploaded successfully. Processing started in the background."
         }
     except HTTPException:
@@ -136,7 +158,7 @@ def list_documents(
     db: Session = Depends(get_db)
 ):
     """Lists all uploaded documents."""
-    docs = db.query(DocumentMetadata).order_by(DocumentMetadata.created_at.desc()).all()
+    docs = db.query(DocumentRecord).order_by(DocumentRecord.created_at.desc()).all()
     return [
         {
             "id": d.id,
@@ -155,8 +177,8 @@ def get_document(
     user_id: int = Depends(auth_service.get_current_user_id),
     db: Session = Depends(get_db)
 ):
-    """Retrieves metadata and summaries for a specific document."""
-    doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
+    """Retrieves details and summaries for a specific document."""
+    doc = db.query(DocumentRecord).filter(DocumentRecord.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
         
@@ -177,7 +199,7 @@ def delete_document(
     db: Session = Depends(get_db)
 ):
     """Deletes a document record and its file on disk."""
-    doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
+    doc = db.query(DocumentRecord).filter(DocumentRecord.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
         
@@ -197,7 +219,7 @@ def digitize_document_endpoint(
     db: Session = Depends(get_db)
 ):
     """Digitizes an uploaded PDF using Gemini multimodal OCR (preserving layout and Indic scripts)."""
-    doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
+    doc = db.query(DocumentRecord).filter(DocumentRecord.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     
@@ -215,7 +237,7 @@ def compliance_audit_endpoint(
     db: Session = Depends(get_db)
 ):
     """Runs a regulatory compliance audit scorecard on the document against IRDAI/DPDP frameworks."""
-    doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
+    doc = db.query(DocumentRecord).filter(DocumentRecord.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
         

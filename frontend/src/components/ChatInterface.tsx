@@ -21,6 +21,7 @@ interface Message {
   currentVersionIndex?: number;
   is_translation_card?: boolean;
   translation_data?: any;
+  source?: "document" | "web" | "knowledge";
 }
 
 interface Document {
@@ -105,15 +106,12 @@ const getTranslationDetails = (text: string) => {
   };
 }; */
 
-const renderContentWithCitations = (content: string, searchResults: any[] | null | undefined) => {
-  if (!searchResults || searchResults.length === 0) {
-    return <div className="whitespace-pre-wrap">{content}</div>;
-  }
+const renderContentFormatted = (content: string, searchResults: any[] | null | undefined) => {
+  if (!content) return null;
 
-  const regex = /\[(\d+)\]/g;
+  // 1. Process Citations in the raw string if we have searchResults
   let annotatedContent = content;
-  
-  if (!content.includes("[1]") && searchResults.length > 0) {
+  if (searchResults && searchResults.length > 0 && !content.includes("[1]")) {
     const sentences = content.split(". ");
     if (sentences.length > 2) {
       const mid = Math.floor(sentences.length / 2);
@@ -125,30 +123,110 @@ const renderContentWithCitations = (content: string, searchResults: any[] | null
     }
   }
 
-  const parts = annotatedContent.split(regex);
-  return (
-    <div className="whitespace-pre-wrap leading-relaxed">
-      {parts.map((part, i) => {
-        if (i % 2 === 1) {
-          const citationIdx = parseInt(part) - 1;
-          const source = searchResults[citationIdx] || searchResults[0];
-          return (
-            <a
-              key={i}
-              href={source.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-500 hover:text-amber-400 font-bold inline-block mx-0.5 font-mono text-[9px] align-super bg-amber-500/10 px-1 rounded hover:bg-amber-500/20 transition-premium border border-amber-500/20"
-              title={source.title}
-            >
-              [{part}]
-            </a>
-          );
+  // 2. Parse inline Markdown (Bold + Citations)
+  const parseInlineElements = (text: string): React.ReactNode[] => {
+    // First, split by bold markdown
+    const boldParts = text.split(/\*\*([^*]+)\*\*/g);
+    const nodes: React.ReactNode[] = [];
+
+    boldParts.forEach((part, boldIdx) => {
+      const isBold = boldIdx % 2 === 1;
+      
+      // For each part, further split by citations regex: /\[(\d+)\]/g
+      const citationRegex = /\[(\d+)\]/g;
+      const citationParts = part.split(citationRegex);
+      
+      const parsedParts = citationParts.map((subPart, subIdx) => {
+        if (subIdx % 2 === 1) {
+          const num = parseInt(subPart);
+          if (searchResults && searchResults.length >= num) {
+            const source = searchResults[num - 1];
+            return (
+              <a
+                key={`cit-${boldIdx}-${subIdx}`}
+                href={source.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-500 hover:text-amber-400 font-bold inline-block mx-0.5 font-mono text-[9px] align-super bg-amber-500/10 px-1.5 rounded hover:bg-amber-500/20 transition-premium border border-amber-500/20"
+                title={source.title}
+              >
+                [{subPart}]
+              </a>
+            );
+          }
+          return `[${subPart}]`;
         }
-        return part;
-      })}
-    </div>
-  );
+        return subPart;
+      });
+
+      if (isBold) {
+        nodes.push(
+          <strong key={`b-${boldIdx}`} className="font-extrabold text-white">
+            {parsedParts}
+          </strong>
+        );
+      } else {
+        nodes.push(...parsedParts);
+      }
+    });
+
+    return nodes;
+  };
+
+  // 3. Process lines for paragraph and list structure
+  const lines = annotatedContent.split('\n');
+  const elements: React.ReactNode[] = [];
+  
+  let inList = false;
+  let listItems: React.ReactNode[] = [];
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    // A line starting with '*' or '-' followed by a space is a bullet point
+    const isBullet = trimmed.startsWith('* ') || trimmed.startsWith('- ');
+
+    if (isBullet) {
+      if (!inList) {
+        inList = true;
+        listItems = [];
+      }
+      const itemText = trimmed.substring(2);
+      listItems.push(
+        <li key={`li-${index}`} className="ml-4 list-disc pl-1 mb-1.5 text-slate-200 leading-relaxed">
+          {parseInlineElements(itemText)}
+        </li>
+      );
+    } else {
+      if (inList) {
+        elements.push(
+          <ul key={`ul-${index}`} className="my-2.5 space-y-1 list-inside">
+            {listItems}
+          </ul>
+        );
+        inList = false;
+      }
+
+      if (trimmed === '') {
+        elements.push(<div key={`br-${index}`} className="h-2" />);
+      } else {
+        elements.push(
+          <p key={`p-${index}`} className="mb-2 leading-relaxed text-slate-200">
+            {parseInlineElements(line)}
+          </p>
+        );
+      }
+    }
+  });
+
+  if (inList) {
+    elements.push(
+      <ul key="ul-final" className="my-2.5 space-y-1 list-inside">
+        {listItems}
+      </ul>
+    );
+  }
+
+  return <div className="space-y-1">{elements}</div>;
 };
 
 interface ChatInterfaceProps {
@@ -215,16 +293,6 @@ export default function ChatInterface({
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [mobileTab, setMobileTab] = useState<"chat" | "document">("chat");
   const [uploading, setUploading] = useState(false);
-  const [activeSummaryTab, setActiveSummaryTab] = useState<"trace" | "summary" | "digitized" | "compliance">("trace");
-  
-  const [digitizedText, setDigitizedText] = useState<string | null>(null);
-  const [digitizing, setDigitizing] = useState(false);
-  const [complianceReport, setComplianceReport] = useState<{
-    score: number;
-    checks: Array<{ rule: string; status: string; details: string }>;
-  } | null>(null);
-  const [auditing, setAuditing] = useState(false);
-  const [auditPreset, setAuditPreset] = useState("DPDP Act 2023");
   const [speakingMessageIndex, setSpeakingMessageIndex] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -283,7 +351,7 @@ export default function ChatInterface({
       };
       loadHistory();
 
-      const loadMetadata = async () => {
+      const loadDocDetails = async () => {
         try {
           const res = await fetch(`${apiBaseUrl}/api/conversations`, {
             headers: { "Authorization": `Bearer ${token}` }
@@ -304,11 +372,11 @@ export default function ChatInterface({
             }
           }
         } catch (err) {
-          console.error("Failed to load conversation metadata:", err);
+          console.error("Failed to load conversation details:", err);
         }
         setSelectedDoc(null);
       };
-      loadMetadata();
+      loadDocDetails();
     } else {
       setMessages([]);
       setSelectedDoc(null);
@@ -501,7 +569,8 @@ export default function ChatInterface({
         has_search: data.has_search,
         search_results: data.search_results,
         versions: [data.response],
-        currentVersionIndex: 0
+        currentVersionIndex: 0,
+        source: data.source
       };
 
       const updatedHistory = [...nextMessages, newAssistantMessage];
@@ -725,7 +794,8 @@ export default function ChatInterface({
         has_search: data.has_search,
         search_results: data.search_results,
         versions: [data.response],
-        currentVersionIndex: 0
+        currentVersionIndex: 0,
+        source: data.source
       };
 
       const updatedHistory = [...nextMessages, newAssistantMessage];
@@ -818,7 +888,8 @@ export default function ChatInterface({
             ...m,
             content: data.response,
             versions: newVersions,
-            currentVersionIndex: newVersions.length - 1
+            currentVersionIndex: newVersions.length - 1,
+            source: data.source
           };
         }
         return m;
@@ -988,60 +1059,7 @@ export default function ChatInterface({
     }, 400);
   };
 
-  const handleOCRDigitization = async () => {
-    if (!selectedDoc || digitizing) return;
-    setDigitizing(true);
-    try {
-      const res = await fetch(`${apiBaseUrl}/api/documents/${selectedDoc.id}/digitize`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setDigitizedText(data.digitized_text);
-        setDigitizing(false);
-        return;
-      }
-    } catch (e) {
-      console.error("Digitization backend failed, running local mock:", e);
-    }
 
-    setTimeout(() => {
-      setDigitizedText(`Digitization completed locally.\n\nDetected text from ${selectedDoc.filename}:\n\n- Executive Operations:\nThis document outlines the strategic operations and local data governance parameters for YAAR companion. All computational steps are verified locally to ensure 100% sovereign user privacy.\n\n- Key Guidelines:\n1. Private by Default.\n2. Never used for AI training.\n3. Encrypted locally.`);
-      setDigitizing(false);
-    }, 800);
-  };
-
-  const handleComplianceAudit = async () => {
-    if (!selectedDoc || auditing) return;
-    setAuditing(true);
-    try {
-      const res = await fetch(`${apiBaseUrl}/api/documents/${selectedDoc.id}/compliance-audit`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setComplianceReport(data);
-        setAuditing(false);
-        return;
-      }
-    } catch (e) {
-      console.error("Compliance backend failed, running local mock:", e);
-    }
-
-    setTimeout(() => {
-      setComplianceReport({
-        score: 95,
-        checks: [
-          { rule: "DPDP Act Section 4: Lawful Processing Notice", status: "passed", details: "Found complete notice provisions regarding purpose of data collection." },
-          { rule: "Sovereign India Hosting Compliance", status: "passed", details: "All storage nodes verified to reside locally." },
-          { rule: "User Request Data Portability (Section 12)", status: "passed", details: "Vault export functionality complies with clear download directives." }
-        ]
-      });
-      setAuditing(false);
-    }, 800);
-  };
 
   return (
     <div className="flex-1 h-full flex flex-col md:flex-row bg-[#06070d] overflow-hidden">
@@ -1071,9 +1089,26 @@ export default function ChatInterface({
             <span className="text-xs font-black uppercase tracking-wider text-slate-350">
               Active Session
             </span>
-            {selectedDoc && (
-              <span className="px-2 py-0.5 rounded bg-blue-950/40 border border-blue-900/30 text-[9px] font-black text-blue-400 truncate max-w-[120px]">
-                📄 {selectedDoc.filename}
+            {selectedDoc ? (
+              <div className="flex items-center gap-1 bg-blue-950/40 border border-blue-900/30 rounded-full px-2.5 py-0.5 shrink-0 max-w-[200px]">
+                <span className="text-[9px] font-black text-blue-400 truncate">
+                  📄 Using Document Context ({selectedDoc.filename})
+                </span>
+                <button
+                  onClick={handleDetachDoc}
+                  className="p-0.5 hover:bg-blue-900/50 rounded text-blue-400 hover:text-white cursor-pointer"
+                  title="Detach Document"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ) : enableSearch ? (
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-950/40 border border-emerald-900/30 text-[9px] font-black text-emerald-450 flex items-center gap-1 animate-pulse">
+                🌐 Search Enabled
+              </span>
+            ) : (
+              <span className="px-2.5 py-0.5 rounded-full bg-purple-950/40 border border-purple-900/30 text-[9px] font-black text-purple-400 flex items-center gap-1">
+                🧠 General Knowledge
               </span>
             )}
           </div>
@@ -1309,9 +1344,27 @@ export default function ChatInterface({
                               </div>
                             </div>
                           ) : (
-                            <div className="whitespace-pre-wrap">{msg.content}</div>
+                            renderContentFormatted(msg.content, msg.search_results)
                           )}
                         </div>
+
+                        {!isUser && (
+                          <div className="flex items-center gap-1.5 mt-1 px-1">
+                            {msg.source === "document" ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-950/30 border border-blue-900/30 text-[8px] font-black uppercase tracking-wider text-blue-400 animate-fade-in">
+                                📄 From Document
+                              </span>
+                            ) : msg.source === "web" ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/30 border border-emerald-900/30 text-[8px] font-black uppercase tracking-wider text-emerald-400 animate-fade-in">
+                                🌐 From Web Search
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-950/30 border border-purple-900/30 text-[8px] font-black uppercase tracking-wider text-purple-400 animate-fade-in">
+                                🧠 General Knowledge
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                       {/* Bubble Action Controls */}
                       {!isEditing && (
@@ -1533,143 +1586,7 @@ export default function ChatInterface({
 
       </div>
 
-      {/* RIGHT SIDE DOCUMENT VIEWER PANEL (Only shown when PDF is attached) */}
-      {selectedDoc && (
-        <div className="w-full md:w-[380px] shrink-0 border-t md:border-t-0 md:border-l border-slate-900 flex flex-col bg-[#0b0c16]">
-          {/* Header */}
-          <div className="p-4 border-b border-slate-900 flex items-center justify-between shrink-0">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-350 truncate">
-              Document Workspace
-            </span>
-            <button onClick={handleDetachDoc} className="p-1 hover:bg-slate-900 rounded-lg text-slate-500 hover:text-white">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Navigation tabs summary */}
-          <div className="flex border-b border-slate-900 bg-slate-950/20 shrink-0">
-            {(["trace", "summary", "digitized", "compliance"] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveSummaryTab(tab)}
-                className={`flex-1 py-3 text-[10px] font-black uppercase tracking-wider transition-colors border-b-2 ${
-                  activeSummaryTab === tab
-                    ? "border-amber-500 text-white"
-                    : "border-transparent text-slate-450 hover:text-slate-200"
-                }`}
-              >
-                {tab === "trace" ? "Metadata" : tab === "summary" ? "Summary" : tab === "digitized" ? "OCR Text" : "Audit"}
-              </button>
-            ))}
-          </div>
-
-          {/* Content panel */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
-            {activeSummaryTab === "trace" && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/40 space-y-2">
-                  <h4 className="font-bold text-slate-200">File Details</h4>
-                  <div className="space-y-1 text-[11px] text-slate-400 font-mono">
-                    <p>Filename: {selectedDoc.filename}</p>
-                    <p>Size: {((selectedDoc.file_size || 0) / 1024).toFixed(1)} KB</p>
-                    <p>Status: {selectedDoc.status}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSummaryTab === "summary" && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="font-bold text-slate-200">English Summary</h4>
-                  <p className="text-slate-350 leading-relaxed font-medium">{selectedDoc.summary || "Generating summary..."}</p>
-                </div>
-                {selectedDoc.summary_punjabi && (
-                  <div className="space-y-2 pt-4 border-t border-slate-900">
-                    <h4 className="font-bold text-slate-200">Punjabi Summary (ਪੰਜਾਬੀ ਸਾਰ)</h4>
-                    <p className="text-slate-350 leading-relaxed font-medium">{selectedDoc.summary_punjabi}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeSummaryTab === "digitized" && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-slate-200">Layout-Preserved OCR</h4>
-                  <button
-                    onClick={handleOCRDigitization}
-                    disabled={digitizing}
-                    className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded border border-slate-800 text-[10px] font-bold"
-                  >
-                    {digitizing ? "Running OCR..." : "Extract Text"}
-                  </button>
-                </div>
-                {digitizedText ? (
-                  <pre className="p-3.5 rounded-xl bg-slate-950 border border-slate-900 text-[11px] text-slate-400 font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                    {digitizedText}
-                  </pre>
-                ) : (
-                  <p className="text-[11px] text-slate-500 font-medium">Click extract text above to convert the PDF layers.</p>
-                )}
-              </div>
-            )}
-
-            {activeSummaryTab === "compliance" && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="font-bold text-slate-200">Sovereign Compliance Audit</h4>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={auditPreset}
-                      onChange={e => setAuditPreset(e.target.value)}
-                      className="flex-1 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded text-[11px] outline-none font-bold"
-                    >
-                      <option value="DPDP Act 2023">🇮🇳 DPDP Act 2023</option>
-                      <option value="RBI Guidelines">🏛️ RBI Directives</option>
-                      <option value="Standard Legal Risk">⚖️ Standard Legal Risk</option>
-                    </select>
-                    <button
-                      onClick={handleComplianceAudit}
-                      disabled={auditing}
-                      className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[10px] font-bold cursor-pointer"
-                    >
-                      {auditing ? "Auditing..." : "Audit PDF"}
-                    </button>
-                  </div>
-                </div>
-
-                {complianceReport ? (
-                  <div className="space-y-3 pt-2">
-                    <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/40 flex items-center justify-between">
-                      <span className="font-bold text-slate-300">Audit Score:</span>
-                      <span className={`font-black text-xs px-2 py-0.5 rounded ${complianceReport.score >= 80 ? "bg-emerald-950 text-emerald-400 border border-emerald-900/30" : "bg-rose-950 text-rose-400 border border-rose-900/30"}`}>
-                        {complianceReport.score} / 100
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {complianceReport.checks.map((c, i) => (
-                        <div key={i} className="p-3 rounded-lg bg-slate-950 border border-slate-900 space-y-1">
-                          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
-                            <span className="text-slate-300">{c.rule}</span>
-                            <span className={c.status === "passed" ? "text-emerald-450" : "text-rose-450"}>
-                              {c.status.toUpperCase()}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 font-medium leading-relaxed">{c.details}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-slate-500 font-medium">Configure options and click audit above to check policy alignment.</p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      </div>
 
     </div>
   );

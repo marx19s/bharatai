@@ -408,15 +408,22 @@ export default function ProjectsPanel({ token, apiBaseUrl, onSelectConversation 
           })}
         </div>
       ) : (
-        <div className="h-60 flex flex-col items-center justify-center text-center p-8 border border-dashed border-slate-800/80 rounded-3xl bg-[#0b0c16]/30">
-          <Folder className="w-10 h-10 text-slate-500 mb-3 animate-pulse" />
-          <h4 className="text-sm font-black text-slate-200">No Projects Yet</h4>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto mt-1 font-semibold">
-            Create Your First Binder using the button above to organize study resources, research tasks, and notes.
-          </p>
+        <div className="h-64 flex flex-col items-center justify-center text-center p-8 border border-dashed border-slate-800/80 rounded-3xl bg-[#0b0c16]/30 space-y-4">
+          <Folder className="w-10 h-10 text-slate-555 animate-pulse" />
+          <div className="space-y-1">
+            <h4 className="text-sm font-black text-slate-200">No Projects Yet</h4>
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed font-semibold">
+              Projects are dedicated workspace binders where you can group related chats, uploaded documents, summaries, and regulatory compliance reports to work on specific topics, studies, or ventures.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="px-4.5 py-2 bg-amber-600/10 hover:bg-amber-600/20 border border-amber-500/20 text-amber-500 hover:text-amber-400 text-xs font-black uppercase tracking-wider rounded-xl transition-premium cursor-pointer shadow-md"
+          >
+            Create Your First Binder
+          </button>
         </div>
       )}
-
     </div>
   );
 }

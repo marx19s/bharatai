@@ -23,30 +23,8 @@ interface DocumentSidebarProps {
   onLogout: () => void;
   activeTab: string;
   onChangeTab: (tab: string) => void;
-  language: string;
-  onChangeLanguage: (lang: string) => void;
 }
 
-const LANGUAGES = [
-  { id: "English", label: "English (India)" },
-  { id: "Hindi", label: "हिन्दी (Hindi)" },
-  { id: "Punjabi", label: "ਪੰਜਾਬੀ (Punjabi)" },
-  { id: "Bengali", label: "বাংলা (Bengali)" },
-  { id: "Telugu", label: "తెలుగు (Telugu)" },
-  { id: "Marathi", label: "मराठी (Marathi)" },
-  { id: "Tamil", label: "தமிழ் (Tamil)" },
-  { id: "Urdu", label: "اردو (Urdu)" },
-  { id: "Gujarati", label: "ગુજરાતી (Gujarati)" },
-  { id: "Kannada", label: "ಕನ್ನಡ (Kannada)" },
-  { id: "Malayalam", label: "മലയാളം (Malayalam)" },
-  { id: "Odia", label: "ଓଡ଼ਿଆ (Odia)" },
-  { id: "Assamese", label: "অসমীয়া (Assamese)" },
-  { id: "Maithili", label: "मैथिली (Maithili)" },
-  { id: "Santali", label: "संताली (Santali)" },
-  { id: "Kashmiri", label: "کٲشُر (Kashmiri)" },
-  { id: "Nepali", label: "नेपाली (Nepali)" },
-  { id: "Konkani", label: "कोंकणी (Konkani)" },
-  { id: "Sindhi", label: "سنڌي (Sindhi)" },
   { id: "Dogri", label: "डोगरी (Dogri)" },
   { id: "Manipuri", label: "মৈতৈলোন (Manipuri)" },
   { id: "Bodo", label: "बर' (Bodo)" },
@@ -64,9 +42,7 @@ export default function DocumentSidebar({
   token,
   onLogout,
   activeTab,
-  onChangeTab,
-  language,
-  onChangeLanguage
+  onChangeTab
 }: DocumentSidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +63,28 @@ export default function DocumentSidebar({
     noChats: "No active chats. Start one above!",
     logOut: "Log Out"
   });
+  const [logoClicks, setLogoClicks] = useState(0);
+  const handleLogoClick = () => {
+    const nextClicks = logoClicks + 1;
+    if (nextClicks >= 5) {
+      setLogoClicks(0);
+      if (typeof window !== "undefined") {
+        const current = localStorage.getItem("yaar_beta_tester_mode") === "true";
+        const newVal = !current;
+        localStorage.setItem("yaar_beta_tester_mode", newVal ? "true" : "false");
+        window.dispatchEvent(new Event("yaar_beta_mode_changed"));
+      }
+    } else {
+      setLogoClicks(nextClicks);
+    }
+  };
+
+  useEffect(() => {
+    if (logoClicks > 0) {
+      const timer = setTimeout(() => setLogoClicks(0), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [logoClicks]);
 
   // Load language settings & labels
   useEffect(() => {
@@ -171,6 +169,227 @@ export default function DocumentSidebar({
           continueBinder: "திட்டத்தை தொடரவும்",
           noChats: "அரட்டைகள் இல்லை. புதியதை தொடங்கவும்!",
           logOut: "வெளியேறு"
+        },
+        Telugu: {
+          lifeHub: "లైఫ్ హబ్",
+          projects: "ప్రాజెక్ట్‌లు",
+          vault: "ది వాల్ట్",
+          settings: "సెట్టింగ్‌లు",
+          newChat: "కొత్త చాట్",
+          recentChats: "ఇటీవలి చాట్‌లు",
+          welcomeBack: "స్వాగతం 👋",
+          workingOn: "మీరు పని చేస్తున్నది:",
+          continueBinder: "ప్రాజెక్ట్ తెరవండి",
+          noChats: "యాక్టివ్ చాట్‌లు లేవు. పైన కొత్తది ప్రారంభించండి!",
+          logOut: "లాగ్ అవుట్"
+        },
+        Marathi: {
+          lifeHub: "लाइफ हब",
+          projects: "प्रकल्प",
+          vault: "द वॉल्ट",
+          settings: "सेटिंग्ज",
+          newChat: "नवीन चॅट",
+          recentChats: "अलीकडील चॅट्स",
+          welcomeBack: "सुस्वागतम 👋",
+          workingOn: "तुम्ही काम करत होता:",
+          continueBinder: "प्रकल्प सुरू ठेवा",
+          noChats: "कोणतेही सक्रिय चॅट नाही. वर सुरू करा!",
+          logOut: "लॉग आउट"
+        },
+        Urdu: {
+          lifeHub: "لائف ہب",
+          projects: "پروجیکٹس",
+          vault: "دی والٹ",
+          settings: "ترتیبات",
+          newChat: "نیا چیٹ",
+          recentChats: "حالیہ چیٹس",
+          welcomeBack: "خوش آمدید 👋",
+          workingOn: "آپ کام کر رہے تھے:",
+          continueBinder: "پروجیکٹ کھولیں",
+          noChats: "کوئی فعال چیٹ نہیں ہے۔ اوپر شروع کریں!",
+          logOut: "لاگ آؤٹ"
+        },
+        Kannada: {
+          lifeHub: "ಲೈಫ್ ಹಬ್",
+          projects: "ಯೋಜನೆಗಳು",
+          vault: "ದಿ ವಾಲ್ಟ್",
+          settings: "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
+          newChat: "ಹೊಸ ಚಾಟ್",
+          recentChats: "ಇತ್ತೀಚಿನ ಚಾಟ್‌ಗಳು",
+          welcomeBack: "ಸ್ವಾಗತ 👋",
+          workingOn: "ನೀವು ಕೆಲಸ ಮಾಡುತ್ತಿದ್ದದ್ದು:",
+          continueBinder: "ಯೋಜನೆ ತೆರೆಯಿರಿ",
+          noChats: "ಯಾವುದೇ ಸಕ್ರಿಯ ಚಾಟ್ ಇಲ್ಲ. ಹೊಸದನ್ನು ಪ್ರಾರಂಭಿಸಿ!",
+          logOut: "ಲಾಗ್ ಔಟ್"
+        },
+        Malayalam: {
+          lifeHub: "ലൈഫ് ഹബ്",
+          projects: "പ്രോജക്റ്റുകൾ",
+          vault: "ദി വോൾട്ട്",
+          settings: "ക്രമീകരണങ്ങൾ",
+          newChat: "പുതിയ ചാറ്റ്",
+          recentChats: "സമീപകാല ചാറ്റുകൾ",
+          welcomeBack: "സ്വാഗതം 👋",
+          workingOn: "നിങ്ങൾ ജോലി ചെയ്യുകയായിരുന്നു:",
+          continueBinder: "പ്രോജക്റ്റ് തുറക്കുക",
+          noChats: "സജീവ ചാറ്റുകൾ ഒന്നുമില്ല. മുകളിൽ ആരംഭിക്കുക!",
+          logOut: "ലോഗ് ഔട്ട്"
+        },
+        Odia: {
+          lifeHub: "ଲାଇଫ୍ ହବ୍",
+          projects: "ପ୍ରକଳ୍ପଗୁଡିକ",
+          vault: "ଦି ଭଲ୍ଟ",
+          settings: "ସେଟିଂସଙ୍ଗ",
+          newChat: "ନୂତന ଚାଟ୍",
+          recentChats: "ସାମ୍ପ୍ରତିକ ଚାଟ୍",
+          welcomeBack: "ସ୍ୱାଗତମ 👋",
+          workingOn: "ଆପଣ କାମ କରୁଥିଲେ:",
+          continueBinder: "ପ୍ରକଳ୍ପ ଆରମ୍ଭ କରନ୍ତು",
+          noChats: "କୌଣସି ସକ୍ରିୟ ଚାଟ୍ ନାହିଁ। ନୂଆ ଆରମ୍ଭ କରନ୍ତୁ!",
+          logOut: "ଲଗ୍ ଆଉଟ୍"
+        },
+        Assamese: {
+          lifeHub: "লাইফ হাব",
+          projects: "প্ৰকল্পসমূহ",
+          vault: "দ্যা ভল্ট",
+          settings: "ছেটিংছ",
+          newChat: "নতুন চ্যাট",
+          recentChats: "সাম্প্রতিক চ্যাটসমূহ",
+          welcomeBack: "স্বাগতম 👋",
+          workingOn: "আপুনি কাম কৰি আছিল:",
+          continueBinder: "প্ৰকল্প খোলক",
+          noChats: "কোনো সক্ৰিয় চ্যাট নাই। নতুন চ্যাট কৰক!",
+          logOut: "লগ আউট"
+        },
+        Maithili: {
+          lifeHub: "लाइफ हब",
+          projects: "परियोजना सभ",
+          vault: "द वॉल्ट",
+          settings: "सेटिंग्स",
+          newChat: "नब गपशप",
+          recentChats: "हालक गपशप",
+          welcomeBack: "स्वागत अछि 👋",
+          workingOn: "अहाँ काज कऽ रहल छलाह:",
+          continueBinder: "परियोजना चालू करू",
+          noChats: "कोनो सक्रिय चैट नै। नव शुरू करू!",
+          logOut: "लॉग आउट"
+        },
+        Santali: {
+          lifeHub: "ᱞᱟᱭᱤᱯᱷ ᱦᱟᱹᱵᱽ",
+          projects: "ᱯᱚᱨᱛᱚᱱ ᱠᱚ",
+          vault: "ᱫᱤ ᱵᱷᱚᱞᱴ",
+          settings: "ᱥᱮᱴᱤᱝ ᱠᱚ",
+          newChat: "ᱱᱟᱶᱟ ᱨᱚᱯᱚᱲ",
+          recentChats: "ᱱᱤᱛᱚᱜᱟᱜ ᱨᱚᱯᱚᱲ",
+          welcomeBack: "ᱥᱟᱹᱜᱩᱱ ᱫᱟᱨᱟᱢ 👋",
+          workingOn: "ᱟᱢᱮᱢ ᱠᱟᱹᱢᱤ ᱠាន ᱛᱟᱦᱮᱸᱫ:",
+          continueBinder: "ᱯᱚᱨᱛᱚᱱ ᱮᱦᱚᱵᱽ ᱢᱮ",
+          noChats: "ᱡᱟᱦᱟᱸᱱ ᱨᱚᱯᱚᱲ ᱵᱟᱹᱱᱩᱜᱼᱟ᱾ ᱱᱟᱶᱟ ᱮᱦᱚᱵᱽ ᱢᱮ!",
+          logOut: "ᱵᱟᱜᱤᱭᱟᱜ ᱢᱮ"
+        },
+        Kashmiri: {
+          lifeHub: "لائف ہب",
+          projects: "پروجیکٹ",
+          vault: "دی والٹ",
+          settings: "سیٹنگز",
+          newChat: "نئہ چیٹ",
+          recentChats: "حالیہ چیٹ",
+          welcomeBack: "خوش آمدید 👋",
+          workingOn: "تہہ اوسیو کام کران:",
+          continueBinder: "پروجیکٹ کھولیو",
+          noChats: "کانہہ سرگرم چیٹ چھنہ۔ نئہ شروع کریو!",
+          logOut: "لاگ آؤٹ"
+        },
+        Nepali: {
+          lifeHub: "लाइफ हब",
+          projects: "परियोजनाहरू",
+          vault: "द वॉल्ट",
+          settings: "सेटिङहरू",
+          newChat: "नयाँ च्याट",
+          recentChats: "हालैका च्याटहरू",
+          welcomeBack: "स्वागत छ 👋",
+          workingOn: "तपाईं काम गर्दै हुनुहुन्थ्यो:",
+          continueBinder: "परियोजना खोल्नुहोस्",
+          noChats: "कुनै च्याट छैन। नयाँ सुरु गर्नुहोस्!",
+          logOut: "लोग आउट"
+        },
+        Konkani: {
+          lifeHub: "लाइफ हब",
+          projects: "प्रकल्प",
+          vault: "द वॉल्ट",
+          settings: "सेटिंग्स",
+          newChat: "नवी चेट",
+          recentChats: "हालीच्यो चेट्यो",
+          welcomeBack: "येवकार 👋",
+          workingOn: "तुमी काम करताले:",
+          continueBinder: "प्रकल्प चालू दवरात्",
+          noChats: "कसलीच चेट चालू ना। नवी सुरू करात!",
+          logOut: "भायर वचात"
+        },
+        Sindhi: {
+          lifeHub: "لائف هب",
+          projects: "پروجيڪٽ",
+          vault: "دي والٽ",
+          settings: "سيٽنگون",
+          newChat: "نئين ڪچهري",
+          recentChats: "تازيون ڪچهريون",
+          welcomeBack: "ڀلي ڪري آيا 👋",
+          workingOn: "توهان ڪم ڪري رهيا هئا:",
+          continueBinder: "پروجيڪٽ کوليو",
+          noChats: "ڪا به ڪچهري چالو ناهي. نئين شروع ڪريو!",
+          logOut: "لاگ آئوٽ"
+        },
+        Dogri: {
+          lifeHub: "लाइफ हब",
+          projects: "प्रोजेक्ट",
+          vault: "द वॉल्ट",
+          settings: "सेटिंग",
+          newChat: "नमां चैट",
+          recentChats: "हालै दे चैट",
+          welcomeBack: "स्वागत ऐ 👋",
+          workingOn: "तुस कम्म करा करदे हे:",
+          continueBinder: "प्रोजेक्ट खोलो",
+          noChats: "कोई चैट चालू नमां ऐ। नमां शुरू करो!",
+          logOut: "लॉग आउट"
+        },
+        Manipuri: {
+          lifeHub: "লাইফ হব",
+          projects: "প্রোজেক্টশিং",
+          vault: "ভল্ট",
+          settings: "সেটিংস",
+          newChat: "অনৌবা চ্যাট",
+          recentChats: "হৌজিক্কী চ্যাটশিং",
+          welcomeBack: "তরাম্না ওকচরি 👋",
+          workingOn: "নহাক থবক তৌরিঙৈ:",
+          continueBinder: "প্রোজেক্ট হাংবীয়ু",
+          noChats: "চ্যাট অমত্তা লৈতে। অনৌবা অমত্তা হৌবীয়ু!",
+          logOut: "লগ আউত"
+        },
+        Bodo: {
+          lifeHub: "लाइफ हब",
+          projects: "प्रोजेक्टफोर",
+          vault: "द वॉल्ट",
+          settings: "सेटिंगफोर",
+          newChat: "गोदान चैट",
+          recentChats: "थांनाय चैटफोर",
+          welcomeBack: "बरायबाय 👋",
+          workingOn: "नों काम खालामगासिनो दंमोन:",
+          continueBinder: "प्रेक्ट खेव",
+          noChats: "जेबो चैट गैया। गोदान जागाय!",
+          logOut: "लोग आउट खालाम"
+        },
+        Sanskrit: {
+          lifeHub: "जीवनकेन्द्रम्",
+          projects: "प्रकल्पाः",
+          vault: "सुरक्षितकोशः",
+          settings: "व्यवस्थापनानि",
+          newChat: "नवीनवार्तालापः",
+          recentChats: "सद्यःकालीनवार्तालापाः",
+          welcomeBack: "स्वागतम् 👋",
+          workingOn: "भवान् कार्यं कुर्वन् आसीत्:",
+          continueBinder: "प्रकल्पम् उद्घाटयतु",
+          noChats: "कोऽपि सक्रियवार्तालापः नास्ति। नवीनं आरभत!",
+          logOut: "बहिर्गमनम्"
         }
       };
 
@@ -365,7 +584,10 @@ export default function DocumentSidebar({
     <aside className="w-full h-full flex flex-col glass-sidebar shrink-0 z-20 text-slate-100 bg-[#121316]">
       
       {/* Brand Header */}
-      <div className="p-5 border-b border-white/5 flex items-center justify-between">
+      <div 
+        onClick={handleLogoClick}
+        className="p-5 border-b border-white/5 flex items-center justify-between cursor-pointer select-none"
+      >
         <div>
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white font-display flex items-center gap-1.5">
             <span className="text-gradient-title">yaar</span>
@@ -623,25 +845,6 @@ export default function DocumentSidebar({
           </button>
         </div>
 
-        <div className="flex items-center justify-between border-t border-white/5 pt-2 mt-1">
-          <span className="text-[8px] text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1">
-            <Languages className="w-3 h-3 text-slate-450" /> Language
-          </span>
-          <select
-            value={language}
-            onChange={(e) => {
-              const newLang = e.target.value;
-              onChangeLanguage(newLang);
-            }}
-            className="bg-slate-900 border border-white/5 rounded px-2 py-0.5 text-[10px] font-bold text-slate-300 outline-none cursor-pointer hover:text-white"
-          >
-            {LANGUAGES.map((l) => (
-              <option key={l.id} value={l.id} className="bg-[#121316] text-white">
-                {l.label}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
     </aside>

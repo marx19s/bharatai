@@ -329,9 +329,9 @@ export default function VaultPanel() {
       ) : (
         <div className="h-60 flex flex-col items-center justify-center text-center p-8 border border-dashed border-slate-800 rounded-3xl">
           <Bookmark className="w-10 h-10 text-slate-500 mb-3 animate-pulse" />
-          <h4 className="text-sm font-bold text-slate-300">Vault is empty</h4>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto mt-1 font-medium">
-            Search or tags query returned no results. Try creating a new note or save key responses directly from your conversation chats.
+          <h4 className="text-sm font-bold text-slate-300">No Saved Knowledge Yet</h4>
+          <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 font-semibold leading-relaxed">
+            The Vault is your personal repository of truth. You can save translations, highlights, citations, and key responses directly from your conversation chats to build a reliable local knowledge base.
           </p>
         </div>
       )}

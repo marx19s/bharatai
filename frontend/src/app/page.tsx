@@ -12,7 +12,7 @@ import VaultPanel from "../components/VaultPanel";
 import SettingsPanel from "../components/SettingsPanel";
 import CommandBar from "../components/CommandBar";
 import GreetingSplash from "../components/GreetingSplash";
-import { Send, Languages, ArrowRight, Sparkles, LogIn, UserPlus } from "lucide-react";
+import { Send, Languages, ArrowRight, Sparkles, LogIn, UserPlus, X, Check } from "lucide-react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
@@ -217,6 +217,13 @@ export default function Home() {
   const [landingInput, setLandingInput] = useState("");
   const [isMobile, setIsMobile] = useState(false);
 
+  // Hidden Beta Tester Mode
+  const [betaTesterMode, setBetaTesterMode] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<"issue" | "improvement" | "loved" | null>(null);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [expectedBehavior, setExpectedBehavior] = useState("");
+  const [feedbackSuccessToast, setFeedbackSuccessToast] = useState(false);
+
   // Check Inactivity Expiry (P0 Memory System)
   const updateSessionExpiry = () => {
     if (typeof window !== "undefined") {
@@ -343,7 +350,20 @@ export default function Home() {
         }
       }
 
-      return () => window.removeEventListener("resize", handleResize);
+      // Load initial beta tester mode state
+      const savedBetaMode = localStorage.getItem("yaar_beta_tester_mode") === "true";
+      setBetaTesterMode(savedBetaMode);
+
+      const handleBetaChange = () => {
+        const updated = localStorage.getItem("yaar_beta_tester_mode") === "true";
+        setBetaTesterMode(updated);
+      };
+      window.addEventListener("yaar_beta_mode_changed", handleBetaChange);
+
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        window.removeEventListener("yaar_beta_mode_changed", handleBetaChange);
+      };
     }
   }, []);
 
@@ -368,6 +388,129 @@ export default function Home() {
       };
     }
   }, [setupStep, token]);
+
+  const handleOpenFeedbackDialog = (type: "issue" | "improvement" | "loved") => {
+    setFeedbackType(type);
+    setFeedbackText("");
+    setExpectedBehavior("");
+  };
+
+  const generateCanvasScreenshot = (tab: string, conversationId: number | null): string => {
+    if (typeof document === "undefined") return "";
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 300;
+      canvas.height = 200;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return "";
+
+      // Draw background (dark blue/black)
+      ctx.fillStyle = "#06070d";
+      ctx.fillRect(0, 0, 300, 200);
+
+      // Draw sidebar (left column, width 60px)
+      ctx.fillStyle = "#121316";
+      ctx.fillRect(0, 0, 60, 200);
+      ctx.strokeStyle = "rgba(255,255,255,0.05)";
+      ctx.beginPath();
+      ctx.moveTo(60, 0);
+      ctx.lineTo(60, 200);
+      ctx.stroke();
+
+      // Draw simulated sidebar items
+      ctx.fillStyle = "#334155";
+      for (let i = 0; i < 4; i++) {
+        ctx.fillRect(10, 15 + i * 20, 40, 6);
+      }
+
+      // Draw active workspace tab / chat interface on the right (width 240px)
+      ctx.fillStyle = "#0c0d12";
+      ctx.fillRect(60, 0, 240, 200);
+
+      // Draw header (height 30px)
+      ctx.fillStyle = "#121316";
+      ctx.fillRect(60, 0, 240, 30);
+
+      // Draw active page indicator text
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 8px sans-serif";
+      ctx.fillText(conversationId ? `Chat: Session #${conversationId}` : `Tab: ${tab}`, 70, 18);
+
+      // Draw simulated content depending on view
+      if (conversationId) {
+        // Chat interface
+        // User bubble
+        ctx.fillStyle = "rgba(245, 158, 11, 0.1)";
+        ctx.fillRect(160, 50, 130, 25);
+        ctx.fillStyle = "#f59e0b";
+        ctx.font = "6px sans-serif";
+        ctx.fillText("User query input simulation", 165, 60);
+
+        // Companion bubble
+        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.fillRect(70, 90, 150, 40);
+        ctx.fillStyle = "#94a3b8";
+        ctx.fillText("Companion response simulation...", 75, 102);
+        ctx.fillText("Source: From Document", 75, 122);
+      } else {
+        // Other tabs
+        ctx.fillStyle = "rgba(255, 255, 255, 0.02)";
+        ctx.fillRect(70, 45, 220, 140);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 10px sans-serif";
+        ctx.fillText(tab, 80, 65);
+        ctx.fillStyle = "#475569";
+        ctx.font = "7px sans-serif";
+        ctx.fillText("Workspace Dashboard Interface Simulator", 80, 85);
+      }
+
+      // Draw Simulated Yaar Orb in bottom right corner
+      ctx.fillStyle = "#f59e0b";
+      ctx.beginPath();
+      ctx.arc(275, 175, 12, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Compress to base64 jpeg at 0.4 quality
+      return canvas.toDataURL("image/jpeg", 0.4);
+    } catch (_) {
+      return "";
+    }
+  };
+
+  const handleSubmitFeedback = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!feedbackText.trim() || !feedbackType) return;
+
+    const simulatedScreenshot = generateCanvasScreenshot(activeTab, activeConversationId);
+
+    const report = {
+      id: `report-${Date.now()}`,
+      type: feedbackType,
+      message: feedbackText.trim(),
+      expectedBehavior: expectedBehavior.trim(),
+      currentPage: activeConversationId ? `chat-${activeConversationId}` : activeTab,
+      language: selectedLang,
+      viewport: `${window.innerWidth}x${window.innerHeight}`,
+      timestamp: new Date().toISOString(),
+      screenshot: simulatedScreenshot,
+      browser: navigator.userAgent
+    };
+
+    if (typeof window !== "undefined") {
+      const existing = JSON.parse(localStorage.getItem("yaar_beta_reports") || "[]");
+      existing.push(report);
+      localStorage.setItem("yaar_beta_reports", JSON.stringify(existing));
+    }
+
+    setFeedbackType(null);
+    setFeedbackText("");
+    setExpectedBehavior("");
+    setFeedbackSuccessToast(true);
+
+    setTimeout(() => {
+      setFeedbackSuccessToast(false);
+    }, 3000);
+  };
 
   // Universal Cmd+K listener
   useEffect(() => {
@@ -414,17 +557,26 @@ export default function Home() {
           id: Date.now().toString(),
           email: email.toLowerCase(),
           name: userName || "Friend",
+          displayName: userName || "Friend",
+          provider: "demo_google",
           language: selectedLang,
           avatar: (userName || "Friend").slice(0, 2).toUpperCase(),
-          createdAt: new Date().toISOString(),
-          password: "google-mock-pass"
+          createdAt: new Date().toISOString()
         };
         accounts.push(existingAccount);
         localStorage.setItem("yaar_accounts", JSON.stringify(accounts));
+      } else {
+        existingAccount.provider = "demo_google";
+        existingAccount.displayName = existingAccount.name || existingAccount.displayName;
+        if (!existingAccount.createdAt) {
+          existingAccount.createdAt = new Date().toISOString();
+        }
+        delete existingAccount.password;
+        localStorage.setItem("yaar_accounts", JSON.stringify(accounts));
       }
 
-      setUserName(existingAccount.name);
-      localStorage.setItem("yaar_user_name", existingAccount.name);
+      setUserName(existingAccount.name || existingAccount.displayName);
+      localStorage.setItem("yaar_user_name", existingAccount.name || existingAccount.displayName);
       localStorage.setItem("yaar_active_user", JSON.stringify(existingAccount));
       localStorage.setItem("bharatai_token", "google-mock-jwt-token-yaar");
       localStorage.setItem("bharatai_email", email);
@@ -482,6 +634,8 @@ export default function Home() {
           id: Date.now().toString(),
           email: email.toLowerCase(),
           name: userName || "Friend",
+          displayName: userName || "Friend",
+          provider: "email",
           language: selectedLang,
           avatar: (userName || "Friend").slice(0, 2).toUpperCase(),
           createdAt: new Date().toISOString(),
@@ -495,7 +649,7 @@ export default function Home() {
         localStorage.setItem("bharatai_token", `mock-token-${email}`);
         localStorage.setItem("bharatai_email", email.toLowerCase());
         setToken(`mock-token-${email}`);
-        setUserName(newAccount.name);
+        setUserName(newAccount.name || newAccount.displayName);
         setAuthLoading(false);
         updateSessionExpiry();
         setSetupStep(5); // Onboarding
@@ -524,12 +678,22 @@ export default function Home() {
             id: Date.now().toString(),
             email: email.toLowerCase(),
             name: account.name,
+            displayName: account.name,
+            provider: "email",
             language: selectedLang,
             avatar: account.name.slice(0, 2).toUpperCase(),
             createdAt: new Date().toISOString(),
             password: password
           };
           accounts.push(existingAccount);
+          localStorage.setItem("yaar_accounts", JSON.stringify(accounts));
+        } else {
+          existingAccount.provider = "email";
+          existingAccount.displayName = existingAccount.name || existingAccount.displayName;
+          if (!existingAccount.createdAt) {
+            existingAccount.createdAt = new Date().toISOString();
+          }
+          existingAccount.password = password;
           localStorage.setItem("yaar_accounts", JSON.stringify(accounts));
         }
 
@@ -879,15 +1043,18 @@ export default function Home() {
                   <>
                     <button
                       onClick={handleMockGoogleLogin}
-                      className="w-full py-3.5 bg-white text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition-premium hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-lg shadow-black/10 flex items-center justify-center gap-2"
+                      className="w-full py-3.5 bg-white text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition-premium hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-lg shadow-black/10 flex flex-col items-center justify-center gap-0.5"
                     >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                      </svg>
-                      <span>{lText.googleBtn}</span>
+                      <div className="flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                        <span>Demo Google Login</span>
+                      </div>
+                      <span className="text-[8px] font-semibold text-slate-500 normal-case tracking-normal">Google Authentication Coming Soon</span>
                     </button>
 
                     <button
@@ -1007,11 +1174,14 @@ export default function Home() {
       setAuthLoading(true);
       
       setTimeout(() => {
-        // Validate password
-        if (currentAcc.password && loginPassword !== currentAcc.password) {
-          setAuthError("Incorrect password. Please try again.");
-          setAuthLoading(false);
-          return;
+        // Validate password (skip if demo_google or default companion email)
+        const isDemoGoogle = currentAcc.provider === "demo_google" || currentAcc.email.toLowerCase() === "companion@yaar.ai";
+        if (!isDemoGoogle) {
+          if (currentAcc.password && loginPassword !== currentAcc.password) {
+            setAuthError("Incorrect password. Please try again.");
+            setAuthLoading(false);
+            return;
+          }
         }
         
         // Log in!
@@ -1116,14 +1286,16 @@ export default function Home() {
               )}
 
               <form onSubmit={handleContinue} className="w-full flex flex-col gap-3">
-                <input
-                  type="password"
-                  placeholder="Enter Account Password"
-                  required
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-900 text-white text-xs text-center placeholder-slate-600 outline-none focus:border-amber-500 transition-premium"
-                />
+                {!((currentAcc?.provider === "demo_google") || (currentAcc?.email?.toLowerCase() === "companion@yaar.ai")) && (
+                  <input
+                    type="password"
+                    placeholder="Enter Account Password"
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-900 text-white text-xs text-center placeholder-slate-600 outline-none focus:border-amber-500 transition-premium"
+                  />
+                )}
 
                 <button
                   type="submit"
@@ -1136,7 +1308,12 @@ export default function Home() {
                       <span>Connecting...</span>
                     </>
                   ) : (
-                    <span>Continue</span>
+                    <span>
+                      {((currentAcc?.provider === "demo_google") || (currentAcc?.email?.toLowerCase() === "companion@yaar.ai")) 
+                        ? "Continue with Google" 
+                        : "Continue"
+                      }
+                    </span>
                   )}
                 </button>
               </form>
@@ -1231,8 +1408,6 @@ export default function Home() {
           onLogout={handleLogout}
           activeTab={activeTab}
           onChangeTab={handleTabChange}
-          language={selectedLang}
-          onChangeLanguage={handleLanguageChange}
         />
       </div>
 
@@ -1372,6 +1547,100 @@ export default function Home() {
           </>
         )}
       </div>
+      {/* Floating Beta Feedback Widget */}
+      {betaTesterMode && (
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2.5">
+          <div className="flex flex-row items-center gap-2 bg-[#1c1d22]/90 backdrop-blur-md border border-white/10 p-2 rounded-full shadow-2xl animate-slide-in-right">
+            <button
+              onClick={() => handleOpenFeedbackDialog("issue")}
+              className="px-3.5 py-2.5 rounded-full hover:bg-slate-800 text-xs font-black uppercase tracking-wider text-rose-455 hover:text-white transition-premium cursor-pointer flex items-center gap-1.5"
+              title="Report Bug / Issue"
+            >
+              <span>🐞</span> <span className="hidden sm:inline">Report Issue</span>
+            </button>
+            <div className="w-[1px] h-4 bg-white/10" />
+            <button
+              onClick={() => handleOpenFeedbackDialog("improvement")}
+              className="px-3.5 py-2.5 rounded-full hover:bg-slate-800 text-xs font-black uppercase tracking-wider text-amber-500 hover:text-white transition-premium cursor-pointer flex items-center gap-1.5"
+              title="Suggest Improvement"
+            >
+              <span>✨</span> <span className="hidden sm:inline">Suggest Improvement</span>
+            </button>
+            <div className="w-[1px] h-4 bg-white/10" />
+            <button
+              onClick={() => handleOpenFeedbackDialog("loved")}
+              className="px-3.5 py-2.5 rounded-full hover:bg-slate-800 text-xs font-black uppercase tracking-wider text-emerald-450 hover:text-white transition-premium cursor-pointer flex items-center gap-1.5"
+              title="Loved This Feature"
+            >
+              <span>❤️</span> <span className="hidden sm:inline">Loved This</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Dialog Modal */}
+      {feedbackType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-[#121316] border border-white/5 shadow-2xl flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                {feedbackType === "issue" ? "🐞 Report Issue" :
+                 feedbackType === "improvement" ? "✨ Suggest Improvement" : "❤️ Loved This"}
+              </h3>
+              <button
+                onClick={() => setFeedbackType(null)}
+                className="text-slate-500 hover:text-white transition-colors"
+              >
+                <X className="w-4.5 h-4.5" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmitFeedback} className="flex flex-col gap-4">
+              <textarea
+                required
+                autoFocus
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder={
+                  feedbackType === "issue" ? "Describe the issue or bug you encountered..." :
+                  feedbackType === "improvement" ? "What feature or polish would make YAAR better?" :
+                  "What did you love about this feature?"
+                }
+                className="w-full p-4 rounded-2xl bg-[#1c1d22] border border-white/5 text-xs text-white placeholder-slate-555 outline-none focus:border-amber-500 transition-premium min-h-[90px] resize-none font-medium leading-relaxed"
+              />
+
+              <textarea
+                value={expectedBehavior}
+                onChange={(e) => setExpectedBehavior(e.target.value)}
+                placeholder="What did you expect to happen? (Expected Behavior)"
+                className="w-full p-4 rounded-2xl bg-[#1c1d22] border border-white/5 text-xs text-white placeholder-slate-555 outline-none focus:border-amber-500 transition-premium min-h-[70px] resize-none font-medium leading-relaxed"
+              />
+              
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setFeedbackType(null)}
+                  className="px-4 py-2 border border-slate-800 text-slate-450 hover:text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-premium cursor-pointer shadow-md"
+                >
+                  Submit Report
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Success Toast */}
+      {feedbackSuccessToast && (
+        <div className="fixed bottom-24 right-6 z-50 p-4 rounded-2xl bg-emerald-950/90 border border-emerald-500/30 text-emerald-450 text-xs font-black uppercase tracking-wider shadow-2xl animate-slide-in-right flex items-center gap-2">
+          <Check className="w-4 h-4" /> Feedback saved to sovereign logs!
+        </div>
+      )}
 
       {/* Ctrl+K Cmd+K Command Menu Bar */}
       <CommandBar

@@ -1,5 +1,6 @@
 import os
 import logging
+import re
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,42 @@ try:
     HAS_GEMINI_SDK = True
 except ImportError:
     logger.warning("google-genai SDK not installed. Falling back to mock mode.")
+
+def clean_ai_phrases(text: str) -> str:
+    if not text:
+        return text
+    # List of forbidden phrases (case-insensitive)
+    forbidden_patterns = [
+        r"\b[Gg]reat\s+[Qq]uestion\b",
+        r"\b[Ee]xcellent\s+[Qq]uestion\b",
+        r"\b[Yy]ou're\s+asking\s+about\b",
+        r"\b[Ii]'d\s+be\s+happy\s+to\s+help\b",
+        r"\b[Aa]bsolutely\b",
+        r"\b[Cc]ertainly\b",
+        r"\b[Oo]f\s+[Cc]ourse\b",
+        r"\b[Tt]hat's\s+a\s+fantastic\s+question\b",
+        r"\b[Oo]h\s+[Yy]aar\b"
+    ]
+    
+    cleaned = text
+    for pat in forbidden_patterns:
+        cleaned = re.sub(pat + r"[,.!?:\s]*", "", cleaned, flags=re.IGNORECASE)
+    
+    # Clean up double spaces, leading/trailing punctuation/spaces
+    cleaned = re.sub(r'^\s*[,.!?:\s]+', '', cleaned)
+    
+    # Normalize multiple horizontal spaces to a single space
+    cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+    # Strip whitespace from the beginning and end of each line
+    lines = [line.strip() for line in cleaned.split('\n')]
+    cleaned = '\n'.join(lines).strip()
+    # Normalize multiple consecutive newlines (max 2)
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+    
+    if cleaned and cleaned[0].islower():
+        cleaned = cleaned[0].upper() + cleaned[1:]
+        
+    return cleaned
 
 class AIService:
     def __init__(self):
@@ -38,8 +75,19 @@ class AIService:
         
         messages list format: [{"role": "user"|"assistant", "content": "..."}]
         """
+        # Parse language and vibe from system instruction if running mock
+        lang = "English"
+        vibe = "friendly"
+        if system_instruction:
+            lang_match = re.search(r"speaking to your user in (\w+)", system_instruction)
+            if lang_match:
+                lang = lang_match.group(1)
+            vibe_match = re.search(r"personality vibe mode is '(\w+)'", system_instruction)
+            if vibe_match:
+                vibe = vibe_match.group(1)
+
         if self.use_mock:
-            return self._mock_chat_response(messages)
+            return clean_ai_phrases(self._mock_chat_response(messages, lang, vibe))
             
         try:
             # Map role names to Gemini roles (user, model)
@@ -60,7 +108,7 @@ class AIService:
                 contents=contents,
                 config=config
             )
-            return response.text if response.text else "Sorry, I couldn't generate a response."
+            return clean_ai_phrases(response.text) if response.text else "Sorry, I couldn't generate a response."
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
             raise e
@@ -397,15 +445,37 @@ class AIService:
                     ]
                 }
 
-    def _mock_chat_response(self, messages: list[dict]) -> str:
+    def _mock_chat_response(self, messages: list[dict], language: str = "English", vibe: str = "friendly") -> str:
         last_user_msg = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
-        last_user_msg_lower = last_user_msg.lower()
+        last_user_msg_lower = last_user_msg.lower().strip()
+
+        # Check if greeting
+        greetings = ["ki haal", "ki haal hai", "kive ho", "kem cho", "kemcho", "vanakkam", "namaste", "nomoshkar", "kaisa hai", "kya haal", "hello", "hi", "how are you", "howdy"]
+        is_greeting = any(g in last_user_msg_lower for g in greetings)
+
+        if is_greeting:
+            if vibe in ["regional", "friendly"]:
+                if language.lower() in ["punjabi", "pa"]:
+                    return "Main theek aa veere. Tu dass?"
+                elif language.lower() in ["gujarati", "gu"]:
+                    return "Maja ma chu mitra. Tame kem cho?"
+                elif language.lower() in ["tamil", "ta"]:
+                    return "Naan nalla irukken nanba. Neenga eppadi irukeenga?"
+                else: # Hindi or other default
+                    return "Main theek hoon dost. Tum batao?"
+            else: # Formal
+                if language.lower() in ["punjabi", "pa"]:
+                    return "ਮੈਂ ਬਿਲਕੁਲ ਠੀਕ ਹਾਂ। ਆਪ ਜੀ ਦੱਸੋ, ਤੁਹਾਡਾ ਕੀ ਹਾਲ ਹੈ?"
+                elif language.lower() in ["gujarati", "gu"]:
+                    return "હું સારો છું. આપ આપના વિશે જણાવો."
+                elif language.lower() in ["tamil", "ta"]:
+                    return "நான் நலமாக இருக்கிறேன். நீங்கள் எப்படி இருக்கிறீர்கள்?"
+                else: # Hindi / English
+                    return "मैं ठीक हूँ। आप कैसे हैं?"
 
         if "summarize" in last_user_msg_lower or "summary" in last_user_msg_lower:
             return "This is a mock summary of your document: It covers high-level concepts of project design, database schemas, and AI components."
-        elif "punjabi" in last_user_msg_lower or "ਪੰਜਾਬੀ" in last_user_msg_lower:
-            return "ਹੈਲੋ! ਇਹ ਭਾਰਤਏਆਈ (BharatAI) ਤੋਂ ਇੱਕ ਨਕਲੀ ਜਵਾਬ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ Gemini API Key ਪ੍ਰਦਾਨ ਕਰੋ।"
         else:
-            return f"Hello from BharatAI! (MOCK MODE). You said: '{last_user_msg}'. Please set GEMINI_API_KEY in backend/.env to activate live AI responses."
+            return f"Set GEMINI_API_KEY in backend/.env to activate live AI responses. (Offline Mock: You said '{last_user_msg}')"
 
 ai_service = AIService()

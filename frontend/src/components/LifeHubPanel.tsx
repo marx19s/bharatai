@@ -449,10 +449,10 @@ export default function LifeHubPanel({
       </section>
 
       {/* SEARCH MEMORY SECTION */}
-      {recentSearches.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Recent Searches</span>
+      <section className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Recent Searches</span>
+          {recentSearches.length > 0 && (
             <button
               onClick={() => {
                 localStorage.removeItem("yaar_search_memory");
@@ -462,7 +462,9 @@ export default function LifeHubPanel({
             >
               Clear
             </button>
-          </div>
+          )}
+        </div>
+        {recentSearches.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {recentSearches.map((s, i) => (
               <button
@@ -475,8 +477,16 @@ export default function LifeHubPanel({
               </button>
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <div className="p-6 rounded-2xl border border-dashed border-slate-800 text-center space-y-2">
+            <Search className="w-5 h-5 text-amber-500/40 mx-auto" />
+            <p className="text-xs font-bold text-slate-400">No Searches Yet</p>
+            <p className="text-[10px] text-slate-500 max-w-xs mx-auto leading-relaxed">
+              Use YAAR's real-time web search capabilities to cross-reference news, verify regional information, and check facts with current web sources.
+            </p>
+          </div>
+        )}
+      </section>
 
       {/* 5. TRUST FOOTER SAFEGUARD */}
       <footer className="pt-6 border-t border-slate-900">

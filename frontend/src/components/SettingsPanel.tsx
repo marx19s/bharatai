@@ -191,6 +191,10 @@ export default function SettingsPanel({
   const [localOnly, setLocalOnly] = useState(true);
   const [disableDiagnostics, setDisableDiagnostics] = useState(false);
 
+  const [betaTesterMode, setBetaTesterMode] = useState(false);
+  const [storedReports, setStoredReports] = useState<any[]>([]);
+  const [copiedReports, setCopiedReports] = useState(false);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedPrivacy = localStorage.getItem("yaar_privacy_settings");
@@ -202,8 +206,29 @@ export default function SettingsPanel({
           setDisableDiagnostics(parsed.disableDiagnostics ?? false);
         } catch (_) {}
       }
+
+      const savedBetaMode = localStorage.getItem("yaar_beta_tester_mode") === "true";
+      setBetaTesterMode(savedBetaMode);
+
+      const savedReports = localStorage.getItem("yaar_beta_reports");
+      if (savedReports) {
+        try { setStoredReports(JSON.parse(savedReports)); } catch (_) {}
+      }
     }
   }, []);
+
+  const handleClearReports = () => {
+    if (confirm("Are you sure you want to clear all stored beta feedback reports?")) {
+      localStorage.removeItem("yaar_beta_reports");
+      setStoredReports([]);
+    }
+  };
+
+  const handleCopyReports = () => {
+    navigator.clipboard.writeText(JSON.stringify(storedReports, null, 2));
+    setCopiedReports(true);
+    setTimeout(() => setCopiedReports(false), 2000);
+  };
 
   const langKey = LOCALIZED_SETTINGS[language] ? language : "English";
   const texts = LOCALIZED_SETTINGS[langKey];
@@ -457,6 +482,20 @@ export default function SettingsPanel({
               />
               <span>{texts.telemetryLabel}</span>
             </label>
+
+            <label className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/20 border border-white/5 hover:border-slate-800 transition-colors cursor-pointer text-xs font-bold text-slate-300">
+              <input
+                type="checkbox"
+                checked={betaTesterMode}
+                onChange={(e) => {
+                  setBetaTesterMode(e.target.checked);
+                  localStorage.setItem("yaar_beta_tester_mode", e.target.checked ? "true" : "false");
+                  window.dispatchEvent(new Event("yaar_beta_mode_changed"));
+                }}
+                className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
+              />
+              <span>Enable Beta Tester Feedback Overlay</span>
+            </label>
           </div>
         </div>
 
@@ -489,6 +528,34 @@ export default function SettingsPanel({
           <span>{texts.exportBtn}</span>
         </button>
       </div>
+
+      {/* Beta Feedback Reports Section */}
+      {storedReports.length > 0 && (
+        <div className="pt-8 border-t border-white/5 space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">Beta Tester Logs ({storedReports.length})</h3>
+            <p className="text-slate-450 text-[10px] font-semibold leading-relaxed max-w-xl">
+              Extract or purge local feedback logs stored during your beta test.
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleCopyReports}
+              className="px-5 py-3 bg-slate-900 hover:bg-slate-800 border border-white/5 hover:border-slate-800 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
+            >
+              <span>{copiedReports ? "Copied! ✓" : "Copy logs to clipboard"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleClearReports}
+              className="px-5 py-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-450 rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
+            >
+              <span>Clear logs</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Session Management */}
       {onLogout && (

@@ -1,8 +1,45 @@
 import os
 import logging
+import re
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+def clean_ai_phrases(text: str) -> str:
+    if not text:
+        return text
+    # List of forbidden phrases (case-insensitive)
+    forbidden_patterns = [
+        r"\b[Gg]reat\s+[Qq]uestion\b",
+        r"\b[Ee]xcellent\s+[Qq]uestion\b",
+        r"\b[Yy]ou're\s+asking\s+about\b",
+        r"\b[Ii]'d\s+be\s+happy\s+to\s+help\b",
+        r"\b[Aa]bsolutely\b",
+        r"\b[Cc]ertainly\b",
+        r"\b[Oo]f\s+[Cc]ourse\b",
+        r"\b[Tt]hat's\s+a\s+fantastic\s+question\b",
+        r"\b[Oo]h\s+[Yy]aar\b"
+    ]
+    
+    cleaned = text
+    for pat in forbidden_patterns:
+        cleaned = re.sub(pat + r"[,.!?:\s]*", "", cleaned, flags=re.IGNORECASE)
+    
+    # Clean up double spaces, leading/trailing punctuation/spaces
+    cleaned = re.sub(r'^\s*[,.!?:\s]+', '', cleaned)
+    
+    # Normalize multiple horizontal spaces to a single space
+    cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+    # Strip whitespace from the beginning and end of each line
+    lines = [line.strip() for line in cleaned.split('\n')]
+    cleaned = '\n'.join(lines).strip()
+    # Normalize multiple consecutive newlines (max 2)
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+    
+    if cleaned and cleaned[0].islower():
+        cleaned = cleaned[0].upper() + cleaned[1:]
+        
+    return cleaned
 
 class AIRouter:
     def __init__(self):
@@ -34,7 +71,7 @@ class AIRouter:
                     raise ValueError(f"Unknown provider {provider}")
                 
                 return {
-                    "text": response_text,
+                    "text": clean_ai_phrases(response_text),
                     "model_used": model_name,
                     "provider_used": provider,
                     "fallback_index": index,
@@ -48,7 +85,7 @@ class AIRouter:
         # Ultimate fallback (local mock offline response)
         logger.error("All AI providers in chain failed. Invoking local offline fallback.")
         return {
-            "text": self._local_fallback_response(messages),
+            "text": clean_ai_phrases(self._local_fallback_response(messages)),
             "model_used": "local-fallback-engine",
             "provider_used": "offline-static",
             "fallback_index": -1,
@@ -126,9 +163,9 @@ class AIRouter:
                 break
                 
         if "translate" in last_user_query:
-            return "नमस्ते! (Translation service offline: rate limits exceeded. Please retry in a few seconds.)"
+            return "नमस्ते! (Translation service offline. Please retry in a few seconds.)"
         elif "summarize" in last_user_query or "pdf" in last_user_query:
-            return "Summary processing offline. I detected your document upload, but all AI endpoints are currently busy. Please try again shortly."
-        return "I am currently running in offline recovery mode. The Sovereign AI endpoints are rate-limited or offline. How can I assist you with offline capabilities?"
+            return "Summary processing offline. All AI endpoints are currently busy. Please try again shortly."
+        return "Offline recovery mode active. The Sovereign AI endpoints are rate-limited or offline. How can I assist you?"
 
 ai_router = AIRouter()

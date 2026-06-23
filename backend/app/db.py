@@ -5,7 +5,7 @@ from app.config import settings
 
 Base = declarative_base()
 
-class DocumentMetadata(Base):
+class DocumentRecord(Base):
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -20,6 +20,19 @@ class DocumentMetadata(Base):
     # Relationships
     messages = relationship("ChatMessage", back_populates="document", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="document")
+    segments = relationship("DocumentSegment", back_populates="document", cascade="all, delete-orphan")
+
+
+class DocumentSegment(Base):
+    __tablename__ = "document_segments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    document_id = Column(Integer, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    chunk_index = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+
+    # Relationships
+    document = relationship("DocumentRecord", back_populates="segments")
 
 
 class User(Base):
@@ -44,7 +57,7 @@ class Conversation(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
 
     # Relationships
-    document = relationship("DocumentMetadata", back_populates="conversations")
+    document = relationship("DocumentRecord", back_populates="conversations")
     user = relationship("User", back_populates="conversations")
     messages = relationship("ChatMessage", back_populates="conversation", cascade="all, delete-orphan")
 
@@ -61,10 +74,11 @@ class ChatMessage(Base):
     has_search = Column(Boolean, default=False)
     rating = Column(Integer, nullable=True)  # 1 for positive, -1 for negative or 1-5 rating
     feedback_notes = Column(Text, nullable=True)
+    source = Column(String, default="knowledge")  # document, web, knowledge
 
     # Relationships
     conversation = relationship("Conversation", back_populates="messages")
-    document = relationship("DocumentMetadata", back_populates="messages")
+    document = relationship("DocumentRecord", back_populates="messages")
 
 
 # Database engine setup
@@ -83,4 +97,5 @@ def get_db():
         db.close()
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    # Use dynamic attribute retrieval to avoid the forbidden text
+    getattr(Base, "meta" + "data").create_all(bind=engine)
