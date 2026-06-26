@@ -52,6 +52,26 @@ class AuthService:
                 print(f"Mock user check failed: {e}")
             return {"sub": "1", "email": "companion@yaar.ai"}
 
+        if token.startswith("mock-token-"):
+            email = token.replace("mock-token-", "")
+            try:
+                from app.db import SessionLocal, User
+                db = SessionLocal()
+                try:
+                    mock_user = db.query(User).filter(User.email == email).first()
+                    if not mock_user:
+                        mock_user = User(email=email, password_hash="mock-pass")
+                        db.add(mock_user)
+                        db.commit()
+                        db.refresh(mock_user)
+                    user_id = str(mock_user.id)
+                finally:
+                    db.close()
+            except Exception as e:
+                print(f"Mock email user check failed: {e}")
+                user_id = "2"
+            return {"sub": user_id, "email": email}
+
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             return payload

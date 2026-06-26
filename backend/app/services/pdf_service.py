@@ -16,6 +16,18 @@ class PDFService:
             
         return text
 
+    def extract_pages(self, file_path: str) -> list[str]:
+        """Extracts text content page-by-page from a PDF file."""
+        pages = []
+        try:
+            reader = pypdf.PdfReader(file_path)
+            for page in reader.pages:
+                page_text = page.extract_text() or ""
+                pages.append(page_text)
+        except Exception as e:
+            raise Exception(f"Failed to extract pages from PDF: {str(e)}")
+        return pages
+
     def chunk_text(self, text: str, chunk_size: int = None, overlap: int = None) -> list[str]:
         """Splits text into overlapping chunks for AI consumption."""
         if chunk_size is None:

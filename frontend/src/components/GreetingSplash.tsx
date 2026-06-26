@@ -9,13 +9,13 @@ interface GreetingSplashProps {
 }
 
 const GREETINGS = [
-  { text: "Hello 👋", lang: "English", translation: "Universal greeting of welcome" },
-  { text: "Namaste 🙏", lang: "Hindi", translation: "I bow to the divine in you" },
-  { text: "Sat Sri Akal 🙏", lang: "Punjabi", translation: "Truth is the ultimate timeless reality" },
-  { text: "Vanakkam 🙏", lang: "Tamil", translation: "Revered greetings and respects" },
-  { text: "Nomoshkar 🙏", lang: "Bengali", translation: "I offer you my respectful greetings" },
-  { text: "Kem Cho 👋", lang: "Gujarati", translation: "How are you doing, friend?" },
-  { text: "Adaab 🤝", lang: "Urdu", translation: "Respect and polite salutations" }
+  { text: "Hello", lang: "English", translation: "Universal greeting of welcome" },
+  { text: "Namaste", lang: "Hindi", translation: "I bow to the divine in you" },
+  { text: "Sat Sri Akal", lang: "Punjabi", translation: "Truth is the ultimate timeless reality" },
+  { text: "Vanakkam", lang: "Tamil", translation: "Revered greetings and respects" },
+  { text: "Nomoshkar", lang: "Bengali", translation: "I offer you my respectful greetings" },
+  { text: "Kem Cho", lang: "Gujarati", translation: "How are you doing, friend?" },
+  { text: "Adaab", lang: "Urdu", translation: "Respect and polite salutations" }
 ];
 
 export default function GreetingSplash({ onComplete }: GreetingSplashProps) {
@@ -23,36 +23,22 @@ export default function GreetingSplash({ onComplete }: GreetingSplashProps) {
   const [state, setState] = useState<"FADE_IN" | "VISIBLE" | "FADE_OUT">("FADE_IN");
 
   useEffect(() => {
-    let active = true;
     let timer: NodeJS.Timeout;
-
-    const runTransition = () => {
-      if (!active) return;
-
-      if (state === "FADE_IN") {
-        timer = setTimeout(() => {
-          if (active) setState("VISIBLE");
-        }, 600);
-      } else if (state === "VISIBLE") {
-        timer = setTimeout(() => {
-          if (active) setState("FADE_OUT");
-        }, 2000);
-      } else if (state === "FADE_OUT") {
-        timer = setTimeout(() => {
-          if (active) {
-            setIndex((prev) => (prev + 1) % GREETINGS.length);
-            setState("FADE_IN");
-          }
-        }, 600);
-      }
-    };
-
-    runTransition();
-
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
+    if (state === "FADE_IN") {
+      timer = setTimeout(() => {
+        setState("VISIBLE");
+      }, 600);
+    } else if (state === "VISIBLE") {
+      timer = setTimeout(() => {
+        setState("FADE_OUT");
+      }, 3500);
+    } else if (state === "FADE_OUT") {
+      timer = setTimeout(() => {
+        setIndex((prev) => (prev + 1) % GREETINGS.length);
+        setState("FADE_IN");
+      }, 600);
+    }
+    return () => clearTimeout(timer);
   }, [state]);
 
   const isVisible = state !== "FADE_OUT";

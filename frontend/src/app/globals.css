@@ -188,3 +188,84 @@ body {
 .active-press:active {
   transform: scale(0.98);
 }
+
+/* Dynamic Themes overriding root variables on body */
+body.theme-dark-indigo {
+  --background: #08070d;
+  --glass-bg-sidebar: rgba(12, 11, 20, 0.9);
+  --glass-bg-panel: rgba(16, 15, 28, 0.85);
+  --glass-bg-card: rgba(24, 22, 42, 0.7);
+  --glass-bg-input: rgba(10, 9, 17, 0.95);
+  --glass-border: rgba(59, 130, 246, 0.12);
+  --glass-border-light: rgba(59, 130, 246, 0.06);
+  --accent-gold: #3b82f6;
+  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #a855f7 100%);
+}
+
+body.theme-onyx-gold {
+  --background: #050505;
+  --glass-bg-sidebar: rgba(10, 10, 10, 0.92);
+  --glass-bg-panel: rgba(15, 15, 15, 0.88);
+  --glass-bg-card: rgba(22, 22, 22, 0.8);
+  --glass-bg-input: rgba(8, 8, 8, 0.95);
+  --glass-border: rgba(217, 119, 6, 0.18);
+  --glass-border-light: rgba(217, 119, 6, 0.08);
+  --accent-gold: #d97706;
+  --accent-gradient: linear-gradient(135deg, #d97706 0%, #b45309 60%, #78350f 100%);
+}
+
+body.theme-slate-calm {
+  --background: #0f172a;
+  --glass-bg-sidebar: rgba(15, 23, 42, 0.9);
+  --glass-bg-panel: rgba(30, 41, 59, 0.85);
+  --glass-bg-card: rgba(51, 65, 85, 0.7);
+  --glass-bg-input: rgba(15, 23, 42, 0.95);
+  --glass-border: rgba(148, 163, 184, 0.18);
+  --glass-border-light: rgba(148, 163, 184, 0.08);
+  --accent-gold: #94a3b8;
+  --accent-gradient: linear-gradient(135deg, #94a3b8 0%, #64748b 50%, #475569 100%);
+}
+
+/* Custom Micro-Animations */
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-slide-up-fade {
+  animation: slide-up-fade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out forwards;
+}
+
+.animate-zoom-in-fade {
+  animation: zoom-in-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

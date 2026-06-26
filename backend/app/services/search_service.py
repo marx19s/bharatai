@@ -29,7 +29,7 @@ class SearchService:
                 return results
         except Exception as e:
             logger.error(f"DuckDuckGo search error for query '{query}': {e}")
-            return []
+            raise Exception("Live search is temporarily unavailable.")
 
     def format_search_results(self, results: list[dict]) -> str:
         """Formats search results as a text context block for LLM prompt."""

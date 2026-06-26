@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Settings, Save, Trash2, CheckCircle, Download, LogOut, Shield } from "lucide-react";
+import { 
+  Settings, Save, Trash2, CheckCircle, Download, LogOut, Shield, 
+  User, Palette, Globe, Brain, Database, Info
+} from "lucide-react";
 
 interface SettingsPanelProps {
   language: string;
@@ -26,7 +29,7 @@ const LANGUAGES = [
   { id: "Tamil", label: "தமிழ் (Tamil)" },
   { id: "Urdu", label: "اردو (Urdu)" },
   { id: "Gujarati", label: "ગુજરાતી (Gujarati)" },
-  { id: "Kannada", label: "ಕನ್ನಡ (Kannada)" },
+  { id: "Kannada", label: "ਕನ್ನಡ (Kannada)" },
   { id: "Malayalam", label: "മലയാളം (Malayalam)" },
   { id: "Odia", label: "ଓਡ଼ਿଆ (Odia)" },
   { id: "Assamese", label: "অসমীয়া (Assamese)" },
@@ -35,11 +38,11 @@ const LANGUAGES = [
   { id: "Kashmiri", label: "کٲشُر (Kashmiri)" },
   { id: "Nepali", label: "नेपाली (Nepali)" },
   { id: "Konkani", label: "कोंकणी (Konkani)" },
-  { id: "Sindhi", label: "سنڌי (Sindhi)" },
+  { id: "Sindhi", label: "سنڌੀ (Sindhi)" },
   { id: "Dogri", label: "डोगरी (Dogri)" },
   { id: "Manipuri", label: "মৈতৈলোন (Manipuri)" },
   { id: "Bodo", label: "बर' (Bodo)" },
-  { id: "Sanskrit", label: "संस्कृतम् (Sanskrit)" }
+  { id: "Sanskrit", label: "संस्कृतם (Sanskrit)" }
 ];
 
 const LOCALIZED_SETTINGS: Record<string, {
@@ -96,7 +99,7 @@ const LOCALIZED_SETTINGS: Record<string, {
     ],
     themes: [
       { id: "dark-indigo", label: "Midnight Indigo" },
-      { id: "onyx-gold", label: "Onyx Gold" },
+      { id: "onyx-gold", label: "Ox Gold" },
       { id: "slate-calm", label: "Calm Slate" }
     ]
   },
@@ -180,6 +183,8 @@ export default function SettingsPanel({
   onReset,
   onLogout
 }: SettingsPanelProps) {
+  const [activeSection, setActiveSection] = useState<"profile" | "appearance" | "language" | "memory" | "privacy" | "data" | "about">("profile");
+
   const [localName, setLocalName] = useState(userName);
   const [localLang, setLocalLang] = useState(language);
   const [localVibe, setLocalVibe] = useState(vibe);
@@ -210,7 +215,7 @@ export default function SettingsPanel({
       const savedBetaMode = localStorage.getItem("yaar_beta_tester_mode") === "true";
       setBetaTesterMode(savedBetaMode);
 
-      const savedReports = localStorage.getItem("yaar_beta_reports");
+      const savedReports = localStorage.getItem("yaar_feedback");
       if (savedReports) {
         try { setStoredReports(JSON.parse(savedReports)); } catch (_) {}
       }
@@ -219,9 +224,19 @@ export default function SettingsPanel({
 
   const handleClearReports = () => {
     if (confirm("Are you sure you want to clear all stored beta feedback reports?")) {
-      localStorage.removeItem("yaar_beta_reports");
+      localStorage.removeItem("yaar_feedback");
       setStoredReports([]);
     }
+  };
+
+  const handleExportReportsJson = () => {
+    const blob = new Blob([JSON.stringify(storedReports, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `yaar_feedback_logs_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleCopyReports = () => {
@@ -354,248 +369,314 @@ export default function SettingsPanel({
     }
   };
 
+  const sections = [
+    { id: "profile", label: "Profile", icon: User },
+    { id: "language", label: "Language", icon: Globe },
+    { id: "memory", label: "Memory", icon: Brain },
+    { id: "privacy", label: "Privacy", icon: Shield },
+    { id: "data", label: "Data", icon: Database },
+    { id: "about", label: "About", icon: Info }
+  ];
+
   return (
-    <div className="flex-1 overflow-y-auto scroll-smooth-premium p-6 md:p-12 max-w-4xl mx-auto space-y-8 bg-[#121316] select-none text-slate-100">
-      
-      {/* Header */}
-      <div className="flex items-center gap-3 pb-3 border-b border-white/5">
-        <div className="p-2.5 rounded-xl bg-amber-950/20 border border-amber-900/30 text-amber-500 shrink-0">
-          <Settings className="w-6 h-6" />
+    <div className="flex-1 flex flex-col md:flex-row h-full min-h-[500px] bg-[#121316] text-slate-100 rounded-2xl overflow-hidden border border-white/5">
+      {/* Left Sidebar Menu */}
+      <div className="w-full md:w-56 bg-slate-950 border-b md:border-b-0 md:border-r border-white/5 p-4 flex flex-col justify-between shrink-0">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2.5 px-2 pb-3 border-b border-white/5">
+            <Settings className="w-4.5 h-4.5 text-amber-500" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-white">Settings</h3>
+          </div>
+          <nav className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 scrollbar-none">
+            {sections.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setActiveSection(s.id as any)}
+                className={`w-auto md:w-full text-left px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-colors cursor-pointer whitespace-nowrap ${
+                  activeSection === s.id
+                    ? "bg-amber-950/20 text-amber-500 border border-amber-900/30"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/30 border border-transparent"
+                }`}
+              >
+                <s.icon className="w-4 h-4 shrink-0" />
+                <span>{s.label}</span>
+              </button>
+            ))}
+          </nav>
         </div>
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-display">
-            {texts.title}
-          </h2>
-          <p className="text-[10px] text-amber-550 font-black uppercase tracking-widest mt-0.5">
-            Configure Your Sovereign Companion Environment
-          </p>
-        </div>
-      </div>
-
-      {showSuccess && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-2 animate-fade-in">
-          <CheckCircle className="w-4.5 h-4.5 shrink-0" />
-          <span>{texts.successMsg}</span>
-        </div>
-      )}
-
-      {/* Main Settings Form */}
-      <form onSubmit={handleSave} className="space-y-8">
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Name */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500">{texts.nameLabel}</label>
-            <input
-              type="text"
-              required
-              value={localName}
-              onChange={(e) => setLocalName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-900/40 border border-white/5 text-white text-xs font-bold focus:border-amber-500 outline-none transition-premium"
-            />
-          </div>
-
-          {/* Language Selection */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500">{texts.langLabel}</label>
-            <select
-              value={localLang}
-              onChange={(e) => setLocalLang(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-900/40 border border-white/5 text-white text-xs font-bold focus:border-amber-500 outline-none transition-premium appearance-none cursor-pointer"
-            >
-              {LANGUAGES.map((l) => (
-                <option key={l.id} value={l.id} className="bg-[#121316] text-white">
-                  {l.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Vibe */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500">{texts.vibeLabel}</label>
-            <select
-              value={localVibe}
-              onChange={(e) => setLocalVibe(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-900/40 border border-white/5 text-white text-xs font-bold focus:border-amber-500 outline-none transition-premium appearance-none cursor-pointer"
-            >
-              {texts.vibes.map((v) => (
-                <option key={v.id} value={v.id} className="bg-[#121316] text-white">
-                  {v.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Theme */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500">{texts.themeLabel}</label>
-            <select
-              value={localTheme}
-              onChange={(e) => setLocalTheme(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-900/40 border border-white/5 text-white text-xs font-bold focus:border-amber-500 outline-none transition-premium appearance-none cursor-pointer"
-            >
-              {texts.themes.map((t) => (
-                <option key={t.id} value={t.id} className="bg-[#121316] text-white">
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Privacy Section */}
-        <div className="pt-6 border-t border-white/5 space-y-4">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4.5 h-4.5 text-amber-500" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-450">{texts.privacyTitle}</h3>
-          </div>
-          <p className="text-[10px] text-slate-500 leading-normal max-w-xl">{texts.privacyDesc}</p>
-          
-          <div className="flex flex-col gap-3">
-            <label className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/20 border border-white/5 hover:border-slate-800 transition-colors cursor-pointer text-xs font-bold text-slate-300">
-              <input
-                type="checkbox"
-                checked={autoDelete}
-                onChange={(e) => setAutoDelete(e.target.checked)}
-                className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
-              />
-              <span>{texts.autoDeleteLabel}</span>
-            </label>
-
-            <label className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/20 border border-white/5 hover:border-slate-800 transition-colors cursor-pointer text-xs font-bold text-slate-300">
-              <input
-                type="checkbox"
-                checked={localOnly}
-                onChange={(e) => setLocalOnly(e.target.checked)}
-                className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
-              />
-              <span>{texts.localOnlyLabel}</span>
-            </label>
-
-            <label className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/20 border border-white/5 hover:border-slate-800 transition-colors cursor-pointer text-xs font-bold text-slate-300">
-              <input
-                type="checkbox"
-                checked={disableDiagnostics}
-                onChange={(e) => setDisableDiagnostics(e.target.checked)}
-                className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
-              />
-              <span>{texts.telemetryLabel}</span>
-            </label>
-
-            <label className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/20 border border-white/5 hover:border-slate-800 transition-colors cursor-pointer text-xs font-bold text-slate-300">
-              <input
-                type="checkbox"
-                checked={betaTesterMode}
-                onChange={(e) => {
-                  setBetaTesterMode(e.target.checked);
-                  localStorage.setItem("yaar_beta_tester_mode", e.target.checked ? "true" : "false");
-                  window.dispatchEvent(new Event("yaar_beta_mode_changed"));
-                }}
-                className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
-              />
-              <span>Enable Beta Tester Feedback Overlay</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <div className="pt-2">
-          <button
-            type="submit"
-            className="px-6 py-3.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-premium cursor-pointer shadow-lg shadow-amber-950/20 flex items-center gap-1.5"
-          >
-            <Save className="w-4 h-4" />
-            <span>{texts.saveBtn}</span>
-          </button>
-        </div>
-      </form>
-
-      {/* Export Section */}
-      <div className="pt-8 border-t border-white/5 space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">{texts.exportTitle}</h3>
-          <p className="text-slate-450 text-[10px] font-semibold leading-relaxed max-w-xl">
-            {texts.exportDesc}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={handleExportData}
-          className="px-5 py-3 bg-slate-900 hover:bg-slate-800 border border-white/5 hover:border-slate-800 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
-        >
-          <Download className="w-4 h-4 text-amber-550" />
-          <span>{texts.exportBtn}</span>
-        </button>
-      </div>
-
-      {/* Beta Feedback Reports Section */}
-      {storedReports.length > 0 && (
-        <div className="pt-8 border-t border-white/5 space-y-4">
-          <div className="space-y-1">
-            <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">Beta Tester Logs ({storedReports.length})</h3>
-            <p className="text-slate-450 text-[10px] font-semibold leading-relaxed max-w-xl">
-              Extract or purge local feedback logs stored during your beta test.
-            </p>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={handleCopyReports}
-              className="px-5 py-3 bg-slate-900 hover:bg-slate-800 border border-white/5 hover:border-slate-800 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
-            >
-              <span>{copiedReports ? "Copied! ✓" : "Copy logs to clipboard"}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleClearReports}
-              className="px-5 py-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-450 rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
-            >
-              <span>Clear logs</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Session Management */}
-      {onLogout && (
-        <div className="pt-8 border-t border-white/5 space-y-4">
-          <div className="space-y-1">
-            <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">{texts.sessionTitle}</h3>
-            <p className="text-slate-450 text-[10px] font-semibold leading-relaxed max-w-xl">
-              {texts.sessionDesc}
-            </p>
-          </div>
+        {onLogout && (
           <button
             type="button"
             onClick={onLogout}
-            className="px-5 py-3 bg-slate-900 hover:bg-slate-800 border border-white/5 hover:border-slate-800 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
+            className="hidden md:flex w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-rose-450 hover:bg-rose-950/10 items-center gap-2.5 transition-colors cursor-pointer mt-4"
           >
-            <LogOut className="w-4 h-4 text-rose-500" />
-            <span>{texts.logoutBtn}</span>
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span>Secure Log Out</span>
           </button>
-        </div>
-      )}
-
-      {/* Danger Zone */}
-      <div className="pt-8 border-t border-white/5 space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-xs font-black text-rose-450 uppercase tracking-wider">{texts.resetLabel}</h3>
-          <p className="text-slate-450 text-[10px] font-semibold leading-relaxed max-w-xl">
-            {texts.resetDesc}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleClearMemory}
-          className="px-5 py-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-450 rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
-        >
-          <Trash2 className="w-4 h-4" />
-          <span>{texts.resetBtn}</span>
-        </button>
+        )}
       </div>
 
+      {/* Right Content Area */}
+      <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6">
+        {showSuccess && (
+          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-2 animate-fade-in mb-4">
+            <CheckCircle className="w-4.5 h-4.5 shrink-0" />
+            <span>{texts.successMsg}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSave} className="space-y-6">
+          {activeSection === "profile" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="border-b border-white/5 pb-2">
+                <h2 className="text-lg font-black text-white">Profile Settings</h2>
+                <p className="text-[10px] text-slate-500">Configure your companion identification and tone persona.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500">{texts.nameLabel}</label>
+                  <input
+                    type="text"
+                    required
+                    value={localName}
+                    onChange={(e) => setLocalName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900/40 border border-white/5 text-white text-xs font-bold focus:border-amber-500 outline-none transition-premium"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500">{texts.vibeLabel}</label>
+                  <select
+                    value={localVibe}
+                    onChange={(e) => setLocalVibe(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900/40 border border-white/5 text-white text-xs font-bold focus:border-amber-500 outline-none transition-premium appearance-none cursor-pointer"
+                  >
+                    {texts.vibes.map((v) => (
+                      <option key={v.id} value={v.id} className="bg-[#121316] text-white">
+                        {v.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+          {activeSection === "language" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="border-b border-white/5 pb-2">
+                <h2 className="text-lg font-black text-white">Language Settings</h2>
+                <p className="text-[10px] text-slate-500">Select your preferred system language.</p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500">{texts.langLabel}</label>
+                <select
+                  value={localLang}
+                  onChange={(e) => setLocalLang(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-900/40 border border-white/5 text-white text-xs font-bold focus:border-amber-500 outline-none transition-premium appearance-none cursor-pointer"
+                >
+                  {LANGUAGES.map((l) => (
+                    <option key={l.id} value={l.id} className="bg-[#121316] text-white">
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "memory" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="border-b border-white/5 pb-2">
+                <h2 className="text-lg font-black text-white">Memory Settings</h2>
+                <p className="text-[10px] text-slate-500">Configure log retention and auto-expiry.</p>
+              </div>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/20 border border-white/5 hover:border-slate-800 transition-colors cursor-pointer text-xs font-bold text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={autoDelete}
+                    onChange={(e) => setAutoDelete(e.target.checked)}
+                    className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
+                  />
+                  <span>{texts.autoDeleteLabel}</span>
+                </label>
+                <div className="p-3.5 rounded-xl bg-slate-950/20 border border-white/5 text-xs text-slate-400 space-y-1">
+                  <h4 className="font-bold text-slate-300">{texts.sessionTitle}</h4>
+                  <p className="leading-normal">{texts.sessionDesc}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "privacy" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="border-b border-white/5 pb-2">
+                <h2 className="text-lg font-black text-white">{texts.privacyTitle}</h2>
+                <p className="text-[10px] text-slate-500">{texts.privacyDesc}</p>
+              </div>
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/20 border border-white/5 hover:border-slate-800 transition-colors cursor-pointer text-xs font-bold text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={localOnly}
+                    onChange={(e) => setLocalOnly(e.target.checked)}
+                    className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
+                  />
+                  <span>{texts.localOnlyLabel}</span>
+                </label>
+
+                <label className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/20 border border-white/5 hover:border-slate-800 transition-colors cursor-pointer text-xs font-bold text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={disableDiagnostics}
+                    onChange={(e) => setDisableDiagnostics(e.target.checked)}
+                    className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
+                  />
+                  <span>{texts.telemetryLabel}</span>
+                </label>
+
+                <label className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/20 border border-white/5 hover:border-slate-800 transition-colors cursor-pointer text-xs font-bold text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={betaTesterMode}
+                    onChange={(e) => {
+                      setBetaTesterMode(e.target.checked);
+                      localStorage.setItem("yaar_beta_tester_mode", e.target.checked ? "true" : "false");
+                      window.dispatchEvent(new Event("yaar_beta_mode_changed"));
+                    }}
+                    className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
+                  />
+                  <span>Enable Beta Tester Feedback Overlay</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "data" && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="border-b border-white/5 pb-2">
+                <h2 className="text-lg font-black text-white">Data Management</h2>
+                <p className="text-[10px] text-slate-500">Export or clear your personal companion data.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">{texts.exportTitle}</h3>
+                  <p className="text-slate-450 text-[10px] leading-relaxed max-w-xl">
+                    {texts.exportDesc}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleExportData}
+                  className="px-5 py-3 bg-slate-900 hover:bg-slate-800 border border-white/5 hover:border-slate-800 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4 text-amber-500" />
+                  <span>{texts.exportBtn}</span>
+                </button>
+              </div>
+
+              {storedReports.length > 0 && (
+                <div className="pt-6 border-t border-white/5 space-y-4">
+                  <div className="space-y-1">
+                    <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">Beta Tester Logs ({storedReports.length})</h3>
+                    <p className="text-slate-450 text-[10px] leading-relaxed max-w-xl">
+                      Extract or purge local feedback logs stored during your beta test.
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleCopyReports}
+                      className="px-5 py-3 bg-slate-900 hover:bg-slate-800 border border-white/5 hover:border-slate-800 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
+                    >
+                      <span>{copiedReports ? "Copied! ✓" : "Copy logs to clipboard"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportReportsJson}
+                      className="px-5 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Export Feedback Logs JSON</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearReports}
+                      className="px-5 py-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-450 rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
+                    >
+                      <span>Clear logs</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-6 border-t border-white/5 space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-xs font-black text-rose-450 uppercase tracking-wider">{texts.resetLabel}</h3>
+                  <p className="text-slate-450 text-[10px] leading-relaxed max-w-xl">
+                    {texts.resetDesc}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearMemory}
+                  className="px-5 py-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-450 rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-premium cursor-pointer flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>{texts.resetBtn}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "about" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="border-b border-white/5 pb-2">
+                <h2 className="text-lg font-black text-white">About YAAR</h2>
+                <p className="text-[10px] text-slate-500">Information about the YAAR Sovereign Companion.</p>
+              </div>
+              <div className="p-5 rounded-2xl bg-slate-900/30 border border-white/5 space-y-3 text-xs leading-relaxed text-slate-300">
+                <p>
+                  <strong>YAAR v1.0</strong> is a modern sovereign AI assistant designed for high reliability, local-first data storage, and zero-compromise privacy.
+                </p>
+                <p>
+                  Built for builders, learners, and creators in India, it features advanced indicating translation capabilities, integrated project binders, and an automated knowledge router.
+                </p>
+                <div className="text-[10px] text-slate-500 pt-2 border-t border-white/5">
+                  &copy; {new Date().getFullYear()} YAAR. Private by Default.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Show Save preferences button on sections that are forms */}
+          {["profile", "language", "memory", "privacy"].includes(activeSection) && (
+            <div className="pt-4 border-t border-white/5 flex justify-between items-center">
+              <button
+                type="submit"
+                className="px-5 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-premium cursor-pointer shadow-lg shadow-amber-950/20 flex items-center gap-1.5"
+              >
+                <Save className="w-4 h-4" />
+                <span>{texts.saveBtn}</span>
+              </button>
+              
+              {onLogout && activeSection === "profile" && (
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="flex md:hidden px-4 py-2 border border-white/5 hover:bg-rose-950/10 text-rose-450 rounded-xl text-xs font-bold items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Log Out</span>
+                </button>
+              )}
+            </div>
+          )}
+        </form>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { MessageSquare, Trash2, RefreshCw, AlertCircle, Plus, Edit2, Check, X, Compass, Folder, Bookmark, Settings, Languages } from "lucide-react";
+import { MessageSquare, Trash2, RefreshCw, AlertCircle, Plus, Edit2, Check, X, Compass, Folder, Bookmark, Settings, Languages, Home, Menu, LogOut } from "lucide-react";
 
 interface Conversation {
   id: number;
@@ -10,6 +10,8 @@ interface Conversation {
   document_id: number | null;
   document_name: string | null;
 }
+
+// 6. TEST DATA SCHEMES FOR VERIFICATION
 
 interface DocumentSidebarProps {
   activeConversationId: number | null;
@@ -23,13 +25,113 @@ interface DocumentSidebarProps {
   onLogout: () => void;
   activeTab: string;
   onChangeTab: (tab: string) => void;
+  language: string;
+  onChangeLanguage: (lang: string) => void;
 }
 
-  { id: "Dogri", label: "डोगरी (Dogri)" },
-  { id: "Manipuri", label: "মৈতৈলোন (Manipuri)" },
-  { id: "Bodo", label: "बर' (Bodo)" },
-  { id: "Sanskrit", label: "संस्कृतम् (Sanskrit)" }
-];
+const DEFAULT_LABELS = {
+  lifeHub: "Life Hub",
+  projects: "Projects",
+  vault: "The Vault",
+  settings: "Settings",
+  translation: "Translation",
+  newChat: "New Chat",
+  recentChats: "Recent Chats",
+  welcomeBack: "Welcome Back 👋",
+  workingOn: "You were working on:",
+  continueBinder: "Continue Binder",
+  noChats: "No active chats. Start one above!",
+  logOut: "Log Out"
+};
+
+const getTranslationPack = (lang: string) => {
+  const translations: Record<string, { sidebar: typeof DEFAULT_LABELS }> = {
+    English: {
+      sidebar: DEFAULT_LABELS
+    },
+    Hindi: {
+      sidebar: {
+        lifeHub: "लाइफ़ हब",
+        projects: "प्रोजेक्ट्स",
+        vault: "द वॉल्ट",
+        settings: "सेटिंग्स",
+        translation: "अनुवाद",
+        newChat: "नया चैट",
+        recentChats: "हाल के चैट",
+        welcomeBack: "स्वागत है दोस्त 👋",
+        workingOn: "आप इस पर काम कर रहे थे:",
+        continueBinder: "बाइंडर जारी रखें",
+        noChats: "कोई सक्रिय चैट नहीं। ऊपर शुरू करें!",
+        logOut: "लॉग आउट"
+      }
+    },
+    Punjabi: {
+      sidebar: {
+        lifeHub: "ਲਾਈਫ਼ ਹੱਬ",
+        projects: "ਪ੍ਰੋਜੈਕਟਸ",
+        vault: "ਦਾ ਵਾਲ੍ਟ",
+        settings: "ਸੈਟਿੰਗਾਂ",
+        translation: "ਅਨੁਵਾਦ",
+        newChat: "ਨਵਾਂ ਚੈਟ",
+        recentChats: "ਤਾਜ਼ਾ ਚੈਟ",
+        welcomeBack: "ਜੀ ਆਇਆਂ ਨੂੰ ਵੀਰੇ 👋",
+        workingOn: "ਤੁਸੀਂ ਇਸ 'ਤੇ ਕੰਮ ਕਰ ਰਹੇ ਸੀ:",
+        continueBinder: "ਬਾਈਂਡਰ ਜਾਰੀ ਰੱਖੋ",
+        noChats: "ਕੋਈ ਸਰਗਰਮ ਚੈਟ ਨਹੀਂ। ਉੱਪਰ ਸ਼ੁਰੂ ਕਰੋ!",
+        logOut: "ਲੌਗ ਆਉਟ"
+      }
+    },
+    Bengali: {
+      sidebar: {
+        lifeHub: "লাইফ হাব",
+        projects: "প্রকল্প",
+        vault: "ভল্ট",
+        settings: "সেটিংস",
+        translation: "অনুবাদ",
+        newChat: "নতুন চ্যাট",
+        recentChats: "সাম্প্রতিক চ্যাট",
+        welcomeBack: "স্বাগতম বন্ধু 👋",
+        workingOn: "আপনি এটিটিতে কাজ করছিলেন:",
+        continueBinder: "বাইন্ডার চালিয়ে যান",
+        noChats: "কোনো চ্যাট নেই। উপরে শুরু করুন!",
+        logOut: "লগ আউট"
+      }
+    },
+    Tamil: {
+      sidebar: {
+        lifeHub: "லைப் ஹப்",
+        projects: "திட்டங்கள்",
+        vault: "வால்ட்",
+        settings: "அமைப்புகள்",
+        translation: "மொழிபெயர்ப்பு",
+        newChat: "புதிய அரட்டை",
+        recentChats: "சமீபத்திய அரட்டைகள்",
+        welcomeBack: "வரவேற்கிறோம் நண்பா 👋",
+        workingOn: "நீங்கள் வேலை செய்து கொண்டிருந்தது:",
+        continueBinder: "பைண்டரைத் தொடரவும்",
+        noChats: "செயலில் அரட்டைகள் இல்லை. மேலே தொடங்கவும்!",
+        logOut: "வெளியேறு"
+      }
+    },
+    Gujarati: {
+      sidebar: {
+        lifeHub: "લાઇફ ਹับ",
+        projects: "પ્રોજેક્ટ્સ",
+        vault: "વોલ્ટ",
+        settings: "સેટિંગ્સ",
+        translation: "અનુવાદ",
+        newChat: "નવી ચેટ",
+        recentChats: "તાજેતરની ચેટ",
+        welcomeBack: "સ્વાગત છે મિત્ર 👋",
+        workingOn: "તમે આના પર કામ કરી રહ્યા હતા:",
+        continueBinder: "બાઇન્ડર ચાલુ રાખો",
+        noChats: "કોઈ સક્રિય ચેટ નથી. ઉપરથી શરૂ કરો!",
+        logOut: "લોગ આઉટ"
+      }
+    }
+  };
+  return translations[lang] || translations["English"];
+};
 
 export default function DocumentSidebar({
   activeConversationId,
@@ -42,7 +144,9 @@ export default function DocumentSidebar({
   token,
   onLogout,
   activeTab,
-  onChangeTab
+  onChangeTab,
+  language,
+  onChangeLanguage
 }: DocumentSidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,11 +154,13 @@ export default function DocumentSidebar({
   const [editingConvId, setEditingConvId] = useState<number | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [memoryProject, setMemoryProject] = useState<string | null>(null);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [localizedLabels, setLocalizedLabels] = useState({
     lifeHub: "Life Hub",
     projects: "Projects",
     vault: "The Vault",
     settings: "Settings",
+    translation: "Translation",
     newChat: "New Chat",
     recentChats: "Recent Chats",
     welcomeBack: "Welcome Back 👋",
@@ -84,318 +190,16 @@ export default function DocumentSidebar({
       const timer = setTimeout(() => setLogoClicks(0), 2500);
       return () => clearTimeout(timer);
     }
-  }, [logoClicks]);
-
-  // Load language settings & labels
+  }, [logoClicks]);  // Load language settings & labels
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedLang = localStorage.getItem("yaar_language") || "English";
-      
-      const sidebarTranslations: Record<string, typeof localizedLabels> = {
-        English: {
-          lifeHub: "Life Hub",
-          projects: "Projects",
-          vault: "The Vault",
-          settings: "Settings",
-          newChat: "New Chat",
-          recentChats: "Recent Chats",
-          welcomeBack: "Welcome Back 👋",
-          workingOn: "You were working on:",
-          continueBinder: "Continue Binder",
-          noChats: "No active chats. Start one above!",
-          logOut: "Log Out"
-        },
-        Hindi: {
-          lifeHub: "लाइफ हब",
-          projects: "प्रोजेक्ट्स",
-          vault: "द वॉल्ट",
-          settings: "सेटिंग्स",
-          newChat: "नया चैट",
-          recentChats: "हालिया चैट",
-          welcomeBack: "स्वागत है 👋",
-          workingOn: "आप काम कर रहे थे:",
-          continueBinder: "प्रोजेक्ट खोलें",
-          noChats: "कोई सक्रिय चैट नहीं। नया शुरू करें!",
-          logOut: "लॉग आउट"
-        },
-        Punjabi: {
-          lifeHub: "ਲਾਈਫ ਹੱਬ",
-          projects: "ਪ੍ਰੋਜੈਕਟਸ",
-          vault: "ਦ ਵਾਲਟ",
-          settings: "ਸੈਟਿੰਗਜ਼",
-          newChat: "ਨਵਾਂ ਚੈਟ",
-          recentChats: "ਹਾਲੀਆ ਚੈਟ",
-          welcomeBack: "ਜੀ ਆਇਆਂ ਨੂੰ 👋",
-          workingOn: "ਤੁਸੀਂ ਕੰਮ ਕਰ ਰਹੇ ਸੀ:",
-          continueBinder: "ਪ੍ਰੋਜੈਕਟ ਖੋਲ੍ਹੋ",
-          noChats: "ਕੋਈ ਚੈਟ ਨਹੀਂ ਹੈ। ਨਵਾਂ ਸ਼ੁਰੂ ਕਰੋ!",
-          logOut: "ਲੌਗ ਆਊਟ"
-        },
-        Gujarati: {
-          lifeHub: "લાઇફ હબ",
-          projects: "પ્રોજેક્ટ્સ",
-          vault: "ધ વૉલ્ટ",
-          settings: "સેટિંગ્સ",
-          newChat: "નવી ચેટ",
-          recentChats: "તાજેતરની ચેટ",
-          welcomeBack: "સ્વાગત છે 👋",
-          workingOn: "તમે કામ કરી રહ્યા હતા:",
-          continueBinder: "પ્રોજેક્ટ ખોલો",
-          noChats: "કોઈ સક્રિય ચેટ નથી. નવી શરૂ કરો!",
-          logOut: "લૉગ આઉટ"
-        },
-        Bengali: {
-          lifeHub: "লাইফ হাব",
-          projects: "প্রজেক্ট সমূহ",
-          vault: "ভল্ট",
-          settings: "সেটিংস",
-          newChat: "নতুন চ্যাট",
-          recentChats: "সাম্প্রতিক চ্যাট",
-          welcomeBack: "স্বাগতম 👋",
-          workingOn: "আপনি কাজ করছিলেন:",
-          continueBinder: "প্রজেক্ট খুলুন",
-          noChats: "কোন চ্যাট নেই। নতুন শুরু করুন!",
-          logOut: "লগ আউট"
-        },
-        Tamil: {
-          lifeHub: "லைஃப் ஹப்",
-          projects: "திட்டங்கள்",
-          vault: "தி வோல்ட்",
-          settings: "அமைப்புகள்",
-          newChat: "புதிய அரட்டை",
-          recentChats: "சமீபத்திய அரட்டைகள்",
-          welcomeBack: "வரவேற்கிறோம் 👋",
-          workingOn: "நீங்கள் பணிபுரிந்தது:",
-          continueBinder: "திட்டத்தை தொடரவும்",
-          noChats: "அரட்டைகள் இல்லை. புதியதை தொடங்கவும்!",
-          logOut: "வெளியேறு"
-        },
-        Telugu: {
-          lifeHub: "లైఫ్ హబ్",
-          projects: "ప్రాజెక్ట్‌లు",
-          vault: "ది వాల్ట్",
-          settings: "సెట్టింగ్‌లు",
-          newChat: "కొత్త చాట్",
-          recentChats: "ఇటీవలి చాట్‌లు",
-          welcomeBack: "స్వాగతం 👋",
-          workingOn: "మీరు పని చేస్తున్నది:",
-          continueBinder: "ప్రాజెక్ట్ తెరవండి",
-          noChats: "యాక్టివ్ చాట్‌లు లేవు. పైన కొత్తది ప్రారంభించండి!",
-          logOut: "లాగ్ అవుట్"
-        },
-        Marathi: {
-          lifeHub: "लाइफ हब",
-          projects: "प्रकल्प",
-          vault: "द वॉल्ट",
-          settings: "सेटिंग्ज",
-          newChat: "नवीन चॅट",
-          recentChats: "अलीकडील चॅट्स",
-          welcomeBack: "सुस्वागतम 👋",
-          workingOn: "तुम्ही काम करत होता:",
-          continueBinder: "प्रकल्प सुरू ठेवा",
-          noChats: "कोणतेही सक्रिय चॅट नाही. वर सुरू करा!",
-          logOut: "लॉग आउट"
-        },
-        Urdu: {
-          lifeHub: "لائف ہب",
-          projects: "پروجیکٹس",
-          vault: "دی والٹ",
-          settings: "ترتیبات",
-          newChat: "نیا چیٹ",
-          recentChats: "حالیہ چیٹس",
-          welcomeBack: "خوش آمدید 👋",
-          workingOn: "آپ کام کر رہے تھے:",
-          continueBinder: "پروجیکٹ کھولیں",
-          noChats: "کوئی فعال چیٹ نہیں ہے۔ اوپر شروع کریں!",
-          logOut: "لاگ آؤٹ"
-        },
-        Kannada: {
-          lifeHub: "ಲೈಫ್ ಹಬ್",
-          projects: "ಯೋಜನೆಗಳು",
-          vault: "ದಿ ವಾಲ್ಟ್",
-          settings: "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
-          newChat: "ಹೊಸ ಚಾಟ್",
-          recentChats: "ಇತ್ತೀಚಿನ ಚಾಟ್‌ಗಳು",
-          welcomeBack: "ಸ್ವಾಗತ 👋",
-          workingOn: "ನೀವು ಕೆಲಸ ಮಾಡುತ್ತಿದ್ದದ್ದು:",
-          continueBinder: "ಯೋಜನೆ ತೆರೆಯಿರಿ",
-          noChats: "ಯಾವುದೇ ಸಕ್ರಿಯ ಚಾಟ್ ಇಲ್ಲ. ಹೊಸದನ್ನು ಪ್ರಾರಂಭಿಸಿ!",
-          logOut: "ಲಾಗ್ ಔಟ್"
-        },
-        Malayalam: {
-          lifeHub: "ലൈഫ് ഹബ്",
-          projects: "പ്രോജക്റ്റുകൾ",
-          vault: "ദി വോൾട്ട്",
-          settings: "ക്രമീകരണങ്ങൾ",
-          newChat: "പുതിയ ചാറ്റ്",
-          recentChats: "സമീപകാല ചാറ്റുകൾ",
-          welcomeBack: "സ്വാഗതം 👋",
-          workingOn: "നിങ്ങൾ ജോലി ചെയ്യുകയായിരുന്നു:",
-          continueBinder: "പ്രോജക്റ്റ് തുറക്കുക",
-          noChats: "സജീവ ചാറ്റുകൾ ഒന്നുമില്ല. മുകളിൽ ആരംഭിക്കുക!",
-          logOut: "ലോഗ് ഔട്ട്"
-        },
-        Odia: {
-          lifeHub: "ଲାଇଫ୍ ହବ୍",
-          projects: "ପ୍ରକଳ୍ପଗୁଡିକ",
-          vault: "ଦି ଭଲ୍ଟ",
-          settings: "ସେଟିଂସଙ୍ଗ",
-          newChat: "ନୂତന ଚାଟ୍",
-          recentChats: "ସାମ୍ପ୍ରତିକ ଚାଟ୍",
-          welcomeBack: "ସ୍ୱାଗତମ 👋",
-          workingOn: "ଆପଣ କାମ କରୁଥିଲେ:",
-          continueBinder: "ପ୍ରକଳ୍ପ ଆରମ୍ଭ କରନ୍ତು",
-          noChats: "କୌଣସି ସକ୍ରିୟ ଚାଟ୍ ନାହିଁ। ନୂଆ ଆରମ୍ଭ କରନ୍ତୁ!",
-          logOut: "ଲଗ୍ ଆଉଟ୍"
-        },
-        Assamese: {
-          lifeHub: "লাইফ হাব",
-          projects: "প্ৰকল্পসমূহ",
-          vault: "দ্যা ভল্ট",
-          settings: "ছেটিংছ",
-          newChat: "নতুন চ্যাট",
-          recentChats: "সাম্প্রতিক চ্যাটসমূহ",
-          welcomeBack: "স্বাগতম 👋",
-          workingOn: "আপুনি কাম কৰি আছিল:",
-          continueBinder: "প্ৰকল্প খোলক",
-          noChats: "কোনো সক্ৰিয় চ্যাট নাই। নতুন চ্যাট কৰক!",
-          logOut: "লগ আউট"
-        },
-        Maithili: {
-          lifeHub: "लाइफ हब",
-          projects: "परियोजना सभ",
-          vault: "द वॉल्ट",
-          settings: "सेटिंग्स",
-          newChat: "नब गपशप",
-          recentChats: "हालक गपशप",
-          welcomeBack: "स्वागत अछि 👋",
-          workingOn: "अहाँ काज कऽ रहल छलाह:",
-          continueBinder: "परियोजना चालू करू",
-          noChats: "कोनो सक्रिय चैट नै। नव शुरू करू!",
-          logOut: "लॉग आउट"
-        },
-        Santali: {
-          lifeHub: "ᱞᱟᱭᱤᱯᱷ ᱦᱟᱹᱵᱽ",
-          projects: "ᱯᱚᱨᱛᱚᱱ ᱠᱚ",
-          vault: "ᱫᱤ ᱵᱷᱚᱞᱴ",
-          settings: "ᱥᱮᱴᱤᱝ ᱠᱚ",
-          newChat: "ᱱᱟᱶᱟ ᱨᱚᱯᱚᱲ",
-          recentChats: "ᱱᱤᱛᱚᱜᱟᱜ ᱨᱚᱯᱚᱲ",
-          welcomeBack: "ᱥᱟᱹᱜᱩᱱ ᱫᱟᱨᱟᱢ 👋",
-          workingOn: "ᱟᱢᱮᱢ ᱠᱟᱹᱢᱤ ᱠាន ᱛᱟᱦᱮᱸᱫ:",
-          continueBinder: "ᱯᱚᱨᱛᱚᱱ ᱮᱦᱚᱵᱽ ᱢᱮ",
-          noChats: "ᱡᱟᱦᱟᱸᱱ ᱨᱚᱯᱚᱲ ᱵᱟᱹᱱᱩᱜᱼᱟ᱾ ᱱᱟᱶᱟ ᱮᱦᱚᱵᱽ ᱢᱮ!",
-          logOut: "ᱵᱟᱜᱤᱭᱟᱜ ᱢᱮ"
-        },
-        Kashmiri: {
-          lifeHub: "لائف ہب",
-          projects: "پروجیکٹ",
-          vault: "دی والٹ",
-          settings: "سیٹنگز",
-          newChat: "نئہ چیٹ",
-          recentChats: "حالیہ چیٹ",
-          welcomeBack: "خوش آمدید 👋",
-          workingOn: "تہہ اوسیو کام کران:",
-          continueBinder: "پروجیکٹ کھولیو",
-          noChats: "کانہہ سرگرم چیٹ چھنہ۔ نئہ شروع کریو!",
-          logOut: "لاگ آؤٹ"
-        },
-        Nepali: {
-          lifeHub: "लाइफ हब",
-          projects: "परियोजनाहरू",
-          vault: "द वॉल्ट",
-          settings: "सेटिङहरू",
-          newChat: "नयाँ च्याट",
-          recentChats: "हालैका च्याटहरू",
-          welcomeBack: "स्वागत छ 👋",
-          workingOn: "तपाईं काम गर्दै हुनुहुन्थ्यो:",
-          continueBinder: "परियोजना खोल्नुहोस्",
-          noChats: "कुनै च्याट छैन। नयाँ सुरु गर्नुहोस्!",
-          logOut: "लोग आउट"
-        },
-        Konkani: {
-          lifeHub: "लाइफ हब",
-          projects: "प्रकल्प",
-          vault: "द वॉल्ट",
-          settings: "सेटिंग्स",
-          newChat: "नवी चेट",
-          recentChats: "हालीच्यो चेट्यो",
-          welcomeBack: "येवकार 👋",
-          workingOn: "तुमी काम करताले:",
-          continueBinder: "प्रकल्प चालू दवरात्",
-          noChats: "कसलीच चेट चालू ना। नवी सुरू करात!",
-          logOut: "भायर वचात"
-        },
-        Sindhi: {
-          lifeHub: "لائف هب",
-          projects: "پروجيڪٽ",
-          vault: "دي والٽ",
-          settings: "سيٽنگون",
-          newChat: "نئين ڪچهري",
-          recentChats: "تازيون ڪچهريون",
-          welcomeBack: "ڀلي ڪري آيا 👋",
-          workingOn: "توهان ڪم ڪري رهيا هئا:",
-          continueBinder: "پروجيڪٽ کوليو",
-          noChats: "ڪا به ڪچهري چالو ناهي. نئين شروع ڪريو!",
-          logOut: "لاگ آئوٽ"
-        },
-        Dogri: {
-          lifeHub: "लाइफ हब",
-          projects: "प्रोजेक्ट",
-          vault: "द वॉल्ट",
-          settings: "सेटिंग",
-          newChat: "नमां चैट",
-          recentChats: "हालै दे चैट",
-          welcomeBack: "स्वागत ऐ 👋",
-          workingOn: "तुस कम्म करा करदे हे:",
-          continueBinder: "प्रोजेक्ट खोलो",
-          noChats: "कोई चैट चालू नमां ऐ। नमां शुरू करो!",
-          logOut: "लॉग आउट"
-        },
-        Manipuri: {
-          lifeHub: "লাইফ হব",
-          projects: "প্রোজেক্টশিং",
-          vault: "ভল্ট",
-          settings: "সেটিংস",
-          newChat: "অনৌবা চ্যাট",
-          recentChats: "হৌজিক্কী চ্যাটশিং",
-          welcomeBack: "তরাম্না ওকচরি 👋",
-          workingOn: "নহাক থবক তৌরিঙৈ:",
-          continueBinder: "প্রোজেক্ট হাংবীয়ু",
-          noChats: "চ্যাট অমত্তা লৈতে। অনৌবা অমত্তা হৌবীয়ু!",
-          logOut: "লগ আউত"
-        },
-        Bodo: {
-          lifeHub: "लाइफ हब",
-          projects: "प्रोजेक्टफोर",
-          vault: "द वॉल्ट",
-          settings: "सेटिंगफोर",
-          newChat: "गोदान चैट",
-          recentChats: "थांनाय चैटफोर",
-          welcomeBack: "बरायबाय 👋",
-          workingOn: "नों काम खालामगासिनो दंमोन:",
-          continueBinder: "प्रेक्ट खेव",
-          noChats: "जेबो चैट गैया। गोदान जागाय!",
-          logOut: "लोग आउट खालाम"
-        },
-        Sanskrit: {
-          lifeHub: "जीवनकेन्द्रम्",
-          projects: "प्रकल्पाः",
-          vault: "सुरक्षितकोशः",
-          settings: "व्यवस्थापनानि",
-          newChat: "नवीनवार्तालापः",
-          recentChats: "सद्यःकालीनवार्तालापाः",
-          welcomeBack: "स्वागतम् 👋",
-          workingOn: "भवान् कार्यं कुर्वन् आसीत्:",
-          continueBinder: "प्रकल्पम् उद्घाटयतु",
-          noChats: "कोऽपि सक्रियवार्तालापः नास्ति। नवीनं आरभत!",
-          logOut: "बहिर्गमनम्"
-        }
-      };
-
-      setLocalizedLabels(sidebarTranslations[savedLang] || sidebarTranslations["English"]);
+      const pack = getTranslationPack(savedLang);
+      if (pack && pack.sidebar) {
+        setLocalizedLabels(pack.sidebar);
+      }
     }
-  }, [refreshTrigger, activeTab]);
+  }, [refreshTrigger, activeTab, language]);
 
   // Load project memory
   useEffect(() => {
@@ -580,6 +384,148 @@ export default function DocumentSidebar({
     }
   };
 
+  if (!sidebarOpen) {
+    const email = typeof window !== "undefined" ? localStorage.getItem("bharatai_email") || "companion@yaar.ai" : "companion@yaar.ai";
+    return (
+      <aside className="w-full h-full flex flex-col items-center justify-between py-4 glass-sidebar shrink-0 z-20 text-slate-100 bg-[#121316] select-none animate-zoom-in-fade">
+        {/* Top Header */}
+        <div className="flex flex-col items-center gap-4 w-full border-b border-white/5 pb-4 px-2">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-xl hover:bg-slate-800/60 text-slate-400 hover:text-white transition-premium cursor-pointer border border-white/5 shadow-sm bg-slate-900/60 flex items-center justify-center"
+            title="Expand Sidebar"
+          >
+            <Menu className="w-4.5 h-4.5" />
+          </button>
+          
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-600 to-rose-500 flex items-center justify-center font-black text-sm text-white shadow-md">
+            अ
+          </div>
+        </div>
+
+        {/* Navigation Tabs (centered textless icons) */}
+        <div className="flex-1 w-full py-4 flex flex-col items-center gap-2">
+          <button
+            onClick={() => {
+              onSelectConversation(null);
+              onChangeTab("home");
+            }}
+            className={`p-2.5 rounded-xl transition-premium cursor-pointer flex items-center justify-center ${
+              activeConversationId === null && activeTab === "home"
+                ? "bg-amber-950/40 border border-amber-500/40 text-amber-500"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/45 border border-transparent"
+            }`}
+            title="Home"
+          >
+            <Home className="w-4.5 h-4.5" />
+          </button>
+
+          <button
+            onClick={() => {
+              onSelectConversation(null);
+              onChangeTab("lifehub");
+            }}
+            className={`p-2.5 rounded-xl transition-premium cursor-pointer flex items-center justify-center ${
+              activeConversationId === null && activeTab === "lifehub"
+                ? "bg-amber-950/40 border border-amber-500/40 text-amber-500"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/45 border border-transparent"
+            }`}
+            title={localizedLabels.lifeHub}
+          >
+            <Compass className="w-4.5 h-4.5" />
+          </button>
+
+          <button
+            onClick={() => {
+              onSelectConversation(null);
+              onChangeTab("projects");
+            }}
+            className={`p-2.5 rounded-xl transition-premium cursor-pointer flex items-center justify-center ${
+              activeConversationId === null && activeTab === "projects"
+                ? "bg-amber-950/40 border border-amber-500/40 text-amber-500"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/45 border border-transparent"
+            }`}
+            title={localizedLabels.projects}
+          >
+            <Folder className="w-4.5 h-4.5" />
+          </button>
+
+          <button
+            onClick={() => {
+              onSelectConversation(null);
+              onChangeTab("vault");
+            }}
+            className={`p-2.5 rounded-xl transition-premium cursor-pointer flex items-center justify-center ${
+              activeConversationId === null && activeTab === "vault"
+                ? "bg-amber-950/40 border border-amber-500/40 text-amber-500"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/45 border border-transparent"
+            }`}
+            title={localizedLabels.vault}
+          >
+            <Bookmark className="w-4.5 h-4.5" />
+          </button>
+
+          <button
+            onClick={() => {
+              onSelectConversation(null);
+              onChangeTab("translate");
+            }}
+            className={`p-2.5 rounded-xl transition-premium cursor-pointer flex items-center justify-center ${
+              activeConversationId === null && activeTab === "translate"
+                ? "bg-amber-950/40 border border-amber-500/40 text-amber-500"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/45 border border-transparent"
+            }`}
+            title={localizedLabels.translation || "Translation"}
+          >
+            <Languages className="w-4.5 h-4.5" />
+          </button>
+
+          <button
+            onClick={() => {
+              onSelectConversation(null);
+              onChangeTab("settings");
+            }}
+            className={`p-2.5 rounded-xl transition-premium cursor-pointer flex items-center justify-center ${
+              activeConversationId === null && activeTab === "settings"
+                ? "bg-amber-950/40 border border-amber-500/40 text-amber-500"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/45 border border-transparent"
+            }`}
+            title={localizedLabels.settings}
+          >
+            <Settings className="w-4.5 h-4.5" />
+          </button>
+
+          <div className="w-full border-t border-white/5 my-2" />
+
+          {/* New Chat circular button */}
+          <button
+            onClick={handleNewConversation}
+            disabled={loading}
+            className="p-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl flex items-center justify-center transition-premium hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-md disabled:opacity-50"
+            title={localizedLabels.newChat}
+          >
+            <Plus className="w-4.5 h-4.5" />
+          </button>
+        </div>
+
+        {/* Bottom Profile / Logout */}
+        <div className="w-full border-t border-white/5 pt-4 flex flex-col items-center gap-3 px-2">
+          <div className="w-8 h-8 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-xs font-black text-amber-500" title={email}>
+            {email[0].toUpperCase()}
+          </div>
+          
+          <button
+            onClick={onLogout}
+            className="p-2 bg-slate-900 hover:bg-slate-800 text-rose-500 rounded-xl flex items-center justify-center border border-white/5 transition-premium cursor-pointer"
+            title={localizedLabels.logOut}
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside className="w-full h-full flex flex-col glass-sidebar shrink-0 z-20 text-slate-100 bg-[#121316]">
       
@@ -590,16 +536,19 @@ export default function DocumentSidebar({
       >
         <div>
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white font-display flex items-center gap-1.5">
-            <span className="text-gradient-title">yaar</span>
-            <span className="text-[10px] uppercase font-mono tracking-widest text-slate-500 bg-slate-900 border border-slate-800/50 px-1.5 py-0.5 rounded ml-1">v1.0</span>
+            <span className="text-gradient-title">Bharat AI</span>
+            <span className="text-[10px] uppercase font-mono tracking-widest text-slate-500 bg-slate-900 border border-slate-800/50 px-1.5 py-0.5 rounded ml-1">Platform</span>
           </h1>
           <p className="text-[8px] text-slate-400 uppercase tracking-[0.22em] font-black mt-0.5">
-            Your Digital Companion
+            Bharat AI Technology
           </p>
         </div>
         <button
-          onClick={() => setSidebarOpen(false)}
-          className="p-1.5 rounded-xl hover:bg-slate-800/60 text-slate-400 hover:text-white transition-premium cursor-pointer border border-white/5 shadow-sm bg-slate-900/60 md:hidden shrink-0 flex items-center justify-center"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSidebarOpen(false);
+          }}
+          className="p-1.5 rounded-xl hover:bg-slate-800/60 text-slate-400 hover:text-white transition-premium cursor-pointer border border-white/5 shadow-sm bg-slate-900/60 shrink-0 flex items-center justify-center"
           title="Collapse Sidebar"
         >
           <X className="w-4 h-4" />
@@ -607,9 +556,16 @@ export default function DocumentSidebar({
       </div>
 
       {/* Memory Welcome Box */}
-      {memoryProject && activeConversationId === null && (
-        <div className="mx-4 mt-4 p-3.5 rounded-2xl bg-amber-950/20 border border-amber-900/20 flex flex-col gap-1.5">
-          <p className="text-[10px] text-amber-500 font-extrabold uppercase tracking-wider">{localizedLabels.welcomeBack}</p>
+      {memoryProject && activeConversationId === null && !welcomeDismissed && (
+        <div className="mx-4 mt-4 p-3.5 rounded-2xl bg-amber-950/20 border border-amber-900/20 flex flex-col gap-1.5 relative">
+          <button
+            onClick={() => setWelcomeDismissed(true)}
+            className="absolute top-2.5 right-2.5 p-0.5 rounded text-slate-500 hover:text-white hover:bg-slate-900 transition-colors cursor-pointer"
+            title="Dismiss"
+          >
+            <X className="w-3 h-3" />
+          </button>
+          <p className="text-[10px] text-amber-500 font-extrabold uppercase tracking-wider pr-6">{localizedLabels.welcomeBack}</p>
           <p className="text-[11px] text-slate-350 font-semibold leading-relaxed">
             {localizedLabels.workingOn}<br/>
             <span className="text-white font-bold text-xs">{memoryProject}</span>
@@ -625,6 +581,22 @@ export default function DocumentSidebar({
 
       {/* Sidebar Core Companion Navigation Tabs */}
       <div className="p-4 space-y-1">
+        <button
+          onClick={() => {
+            onSelectConversation(null);
+            onChangeTab("home");
+            if (window.innerWidth < 768) setSidebarOpen(false);
+          }}
+          className={`w-full py-2.5 px-4 rounded-xl flex items-center gap-3 text-xs font-bold transition-premium cursor-pointer ${
+            activeConversationId === null && activeTab === "home"
+              ? "bg-amber-950/30 border border-amber-500/30 text-amber-500 font-black"
+              : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/45 border border-transparent"
+          }`}
+        >
+          <Home className="w-4.5 h-4.5" />
+          <span>Home</span>
+        </button>
+
         <button
           onClick={() => {
             onSelectConversation(null);
@@ -676,6 +648,22 @@ export default function DocumentSidebar({
         <button
           onClick={() => {
             onSelectConversation(null);
+            onChangeTab("translate");
+            if (window.innerWidth < 768) setSidebarOpen(false);
+          }}
+          className={`w-full py-2.5 px-4 rounded-xl flex items-center gap-3 text-xs font-bold transition-premium cursor-pointer ${
+            activeConversationId === null && activeTab === "translate"
+              ? "bg-amber-950/30 border border-amber-500/30 text-amber-500 font-black"
+              : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/45 border border-transparent"
+          }`}
+        >
+          <Languages className="w-4.5 h-4.5" />
+          <span>{localizedLabels.translation || "Translation"}</span>
+        </button>
+
+        <button
+          onClick={() => {
+            onSelectConversation(null);
             onChangeTab("settings");
             if (window.innerWidth < 768) setSidebarOpen(false);
           }}
@@ -697,7 +685,7 @@ export default function DocumentSidebar({
           disabled={loading}
           className="w-full py-3 px-4 bg-amber-600 hover:bg-amber-500 text-white rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-premium hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-md disabled:opacity-50"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4.5 h-4.5" />
           <span>{localizedLabels.newChat}</span>
         </button>
       </div>
@@ -791,7 +779,7 @@ export default function DocumentSidebar({
                           {formatDate(conv.created_at)}
                         </span>
                         {conv.document_name && (
-                          <span className="text-[9px] text-amber-550 font-bold truncate max-w-[80px]">
+                          <span className="text-[9px] text-amber-555 font-bold truncate max-w-[80px]">
                             📄 {conv.document_name}
                           </span>
                         )}
@@ -815,7 +803,7 @@ export default function DocumentSidebar({
                     </button>
                     <button
                       onClick={(e) => handleDelete(e, conv.id)}
-                      className="p-1 text-slate-500 hover:text-rose-450 rounded transition-premium shrink-0"
+                      className="p-1 text-slate-500 hover:text-rose-455 rounded transition-premium shrink-0"
                       title="Delete Chat"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -826,6 +814,37 @@ export default function DocumentSidebar({
             </div>
           );
         })}
+
+        {/* Relocated Other Products Block */}
+        <div className="border-t border-white/5 my-4 pt-4 space-y-2 select-none">
+          <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block pl-1">Other Products</span>
+          
+          <div className="space-y-1.5 font-sans">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/10 border border-white/5 opacity-55 text-slate-450">
+              <div className="flex items-center gap-2 text-[10px] font-bold">
+                <span className="text-xs">📚</span>
+                <span>BIRBAL</span>
+              </div>
+              <span className="text-[7px] uppercase font-mono tracking-wider bg-slate-950 border border-slate-850 px-1.5 py-0.5 rounded text-amber-500">Coming</span>
+            </div>
+
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/10 border border-white/5 opacity-55 text-slate-450">
+              <div className="flex items-center gap-2 text-[10px] font-bold">
+                <span className="text-xs">🎙️</span>
+                <span>UDAAN</span>
+              </div>
+              <span className="text-[7px] uppercase font-mono tracking-wider bg-slate-950 border border-slate-850 px-1.5 py-0.5 rounded text-amber-500">Coming</span>
+            </div>
+
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/10 border border-white/5 opacity-55 text-slate-450">
+              <div className="flex items-center gap-2 text-[10px] font-bold">
+                <span className="text-xs">⚡</span>
+                <span>SUTRA</span>
+              </div>
+              <span className="text-[7px] uppercase font-mono tracking-wider bg-slate-950 border border-slate-850 px-1.5 py-0.5 rounded text-amber-500">Coming</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Account Profile Session / Logout */}
@@ -844,7 +863,6 @@ export default function DocumentSidebar({
             {localizedLabels.logOut}
           </button>
         </div>
-
       </div>
 
     </aside>

@@ -24,25 +24,33 @@ def process_pdf_background(doc_id: int, file_path: str):
         if not doc:
             return
             
-        # Extract text
+        doc_name = doc.filename
+        
+        # Stage 2: Extract
+        print(f"[PDF PIPELINE - EXTRACT] Starting text extraction for file '{doc_name}' from path '{file_path}'.")
         text = pdf_service.extract_text(file_path)
         if not text.strip():
-            text = "[System Warning: This document appears to be a scanned image or empty. No digital text could be extracted. Please upload a digital text PDF, or chat with me using general knowledge.]"
+            print(f"[PDF PIPELINE - EXTRACT] Extraction failed: empty text for file '{doc_name}'.")
+            raise Exception("No text could be extracted from this PDF document.")
             
+        print(f"[PDF PIPELINE - EXTRACT] Successfully extracted text, total length: {len(text)} characters.")
+        
+        # Stage 3: Chunk
+        print(f"[PDF PIPELINE - CHUNK] Starting chunking process for '{doc_name}'.")
         # Perform clean chunking: chunks of 1000 characters, with 200 characters overlap
         chunks = []
-        if text.strip() and not text.startswith("[System Warning"):
-            chunk_size = 1000
-            overlap = 200
-            start = 0
-            while start < len(text):
-                end = start + chunk_size
-                chunks.append(text[start:end])
-                start += chunk_size - overlap
-        else:
-            chunks = [text]
+        chunk_size = 1000
+        overlap = 200
+        start = 0
+        while start < len(text):
+            end = start + chunk_size
+            chunks.append(text[start:end])
+            start += chunk_size - overlap
+            
+        print(f"[PDF PIPELINE - CHUNK] Created {len(chunks)} chunks.")
 
-        # Save chunks to database
+        # Stage 4: Store
+        print(f"[PDF PIPELINE - STORE] Saving segments to database for document '{doc_name}' (ID: {doc_id}).")
         for i, chunk_content in enumerate(chunks):
             chunk_record = DocumentSegment(
                 document_id=doc_id,
@@ -75,12 +83,15 @@ def process_pdf_background(doc_id: int, file_path: str):
         doc.summary_punjabi = summary_punjabi
         doc.status = "completed"
         db.commit()
+        print(f"[PDF PIPELINE - STORE] Successfully stored and finalized document '{doc_name}'.")
     except Exception as e:
-        print(f"Background processing failed for doc {doc_id}: {e}")
+        print(f"[PDF PIPELINE - FAILURE] Background processing failed for doc {doc_id}: {e}")
         try:
             doc = db.query(DocumentRecord).filter(DocumentRecord.id == doc_id).first()
             if doc:
                 doc.status = "failed"
+                doc.summary = "Unable to read this document."
+                doc.summary_punjabi = "Unable to read this document."
                 db.commit()
         except:
             pass
@@ -122,6 +133,9 @@ def upload_document(
         
         # Save to local cloud storage simulator
         storage_path = storage_service.save_file(filename, contents)
+        
+        # Stage 1: Upload
+        print(f"[PDF PIPELINE - UPLOAD] Saved uploaded file '{filename}' to storage path '{storage_path}'. File size: {file_size} bytes.")
         
         # Create database entry
         doc_record = DocumentRecord(

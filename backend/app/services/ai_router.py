@@ -8,7 +8,33 @@ logger = logging.getLogger(__name__)
 def clean_ai_phrases(text: str) -> str:
     if not text:
         return text
-    # List of forbidden phrases (case-insensitive)
+    
+    # List of forbidden patterns that we want to clean from beginning of response
+    forbidden_at_start = [
+        r"^[Ss]ure[,.!?:\s]*",
+        r"^[Cc]ertainly[,.!?:\s]*",
+        r"^[Aa]bsolutely[,.!?:\s]*",
+        r"^[Gg]reat\s+[Qq]uestion[,.!?:\s]*",
+        r"^[Ee]xcellent\s+[Qq]uestion[,.!?:\s]*",
+        r"^[Yy]ou're\s+asking\s+about[,.!?:\s]*",
+        r"^[Ii]'d\s+be\s+happy\s+to\s+help[,.!?:\s]*",
+        r"^[Oo]f\s+[Cc]ourse[,.!?:\s]*",
+        r"^[Tt]hat's\s+a\s+fantastic\s+question[,.!?:\s]*",
+        r"^[Oo]h\s+[Yy]aar[,.!?:\s]*",
+    ]
+    
+    cleaned = text.strip()
+    # Loop to clear nested/stacked starters like "Sure! Absolutely, "
+    changed = True
+    while changed:
+        changed = False
+        for pat in forbidden_at_start:
+            new_cleaned = re.sub(pat, "", cleaned, flags=re.IGNORECASE).strip()
+            if new_cleaned != cleaned:
+                cleaned = new_cleaned
+                changed = True
+
+    # List of forbidden phrases to clean anywhere
     forbidden_patterns = [
         r"\b[Gg]reat\s+[Qq]uestion\b",
         r"\b[Ee]xcellent\s+[Qq]uestion\b",
@@ -21,19 +47,27 @@ def clean_ai_phrases(text: str) -> str:
         r"\b[Oo]h\s+[Yy]aar\b"
     ]
     
-    cleaned = text
     for pat in forbidden_patterns:
         cleaned = re.sub(pat + r"[,.!?:\s]*", "", cleaned, flags=re.IGNORECASE)
     
+    # Limit emojis to at most 1 per response.
+    emoji_pattern = re.compile(
+        r"[\U00010000-\U0010ffff\u2600-\u27ff]",
+        re.UNICODE
+    )
+    
+    matches = list(emoji_pattern.finditer(cleaned))
+    if len(matches) > 1:
+        # Keep only the first match, discard the rest
+        for match in reversed(matches[1:]):
+            start, end = match.span()
+            cleaned = cleaned[:start] + cleaned[end:]
+
     # Clean up double spaces, leading/trailing punctuation/spaces
     cleaned = re.sub(r'^\s*[,.!?:\s]+', '', cleaned)
-    
-    # Normalize multiple horizontal spaces to a single space
     cleaned = re.sub(r'[ \t]+', ' ', cleaned)
-    # Strip whitespace from the beginning and end of each line
     lines = [line.strip() for line in cleaned.split('\n')]
     cleaned = '\n'.join(lines).strip()
-    # Normalize multiple consecutive newlines (max 2)
     cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
     
     if cleaned and cleaned[0].islower():
@@ -43,60 +77,56 @@ def clean_ai_phrases(text: str) -> str:
 
 class AIRouter:
     def __init__(self):
-        # API Keys
         self.openrouter_key = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("DEEPSEEK_API_KEY")
-        
-        # Available models order for fallback
-        self.model_fallback_chain = [
-            {"provider": "gemini", "model": "gemini-2.5-flash"},
-            {"provider": "openrouter", "model": "deepseek/deepseek-chat"},
-            {"provider": "openrouter", "model": "qwen/qwen-2.5-72b-instruct"},
-            {"provider": "openrouter", "model": "meta-llama/llama-3.1-70b-instruct"},
-        ]
+        self.generation_provider = os.environ.get("YAAR_AI_PROVIDER", "gemini").strip().lower()
+        self.generation_model = os.environ.get("YAAR_AI_MODEL", "").strip()
+        if not self.generation_model and self.generation_provider == "gemini":
+            self.generation_model = "gemini-2.5-flash"
 
     def generate_chat_response(self, messages: list[dict], system_instruction: str = None) -> dict:
-        """Route generation request to primary model, falling back sequentially if error occurs."""
-        errors = []
-        for index, config in enumerate(self.model_fallback_chain):
-            provider = config["provider"]
-            model_name = config["model"]
-            
+        """Route generation request to the configured provider with automatic retries and fallbacks."""
+        max_retries = 3
+        last_exception = None
+        for attempt in range(max_retries):
             try:
-                logger.info(f"Attempting response generation using {provider} - {model_name}")
-                if provider == "gemini":
-                    response_text = self._call_gemini(messages, model_name, system_instruction)
-                elif provider == "openrouter":
-                    response_text = self._call_openrouter(messages, model_name, system_instruction)
+                logger.info(f"Attempting response generation using configured provider (attempt {attempt + 1}/{max_retries}).")
+                if self.generation_provider == "gemini":
+                    response_text = self._call_gemini(messages, system_instruction)
+                elif self.generation_provider == "openrouter":
+                    response_text = self._call_openrouter(messages, system_instruction)
                 else:
-                    raise ValueError(f"Unknown provider {provider}")
-                
+                    raise ValueError("Configured AI provider is not supported.")
+
                 return {
                     "text": clean_ai_phrases(response_text),
-                    "model_used": model_name,
-                    "provider_used": provider,
-                    "fallback_index": index,
+                    "model_used": "configured-default",
+                    "provider_used": self.generation_provider,
+                    "fallback_index": 0,
                     "status": "success"
                 }
             except Exception as e:
-                err_msg = f"Provider {provider} ({model_name}) failed: {str(e)}"
-                logger.warning(err_msg)
-                errors.append(err_msg)
-
-        # Ultimate fallback (local mock offline response)
-        logger.error("All AI providers in chain failed. Invoking local offline fallback.")
+                logger.warning(f"Attempt {attempt + 1} failed: {str(e)}")
+                last_exception = e
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(0.5 * (attempt + 1))
+        
+        logger.error("Configured AI provider failed after all retries. Invoking local offline fallback.")
         return {
             "text": clean_ai_phrases(self._local_fallback_response(messages)),
             "model_used": "local-fallback-engine",
             "provider_used": "offline-static",
             "fallback_index": -1,
             "status": "local_fallback",
-            "errors": errors
+            "errors": [str(last_exception)]
         }
 
-    def _call_gemini(self, messages: list[dict], model_name: str, system_instruction: str) -> str:
+    def _call_gemini(self, messages: list[dict], system_instruction: str) -> str:
         gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
         if not gemini_key:
             raise ValueError("Gemini API key is not configured.")
+        if not self.generation_model:
+            raise ValueError("YAAR_AI_MODEL is not configured.")
         
         from google import genai
         from google.genai import types
@@ -115,7 +145,7 @@ class AIRouter:
             config.system_instruction = system_instruction
             
         response = client.models.generate_content(
-            model=model_name,
+            model=self.generation_model,
             contents=contents,
             config=config
         )
@@ -123,9 +153,11 @@ class AIRouter:
             return response.text
         raise ValueError("Empty response from Gemini model.")
 
-    def _call_openrouter(self, messages: list[dict], model_name: str, system_instruction: str) -> str:
+    def _call_openrouter(self, messages: list[dict], system_instruction: str) -> str:
         if not self.openrouter_key:
             raise ValueError("OpenRouter / DeepSeek API key is not configured.")
+        if not self.generation_model:
+            raise ValueError("YAAR_AI_MODEL is not configured.")
         
         import httpx
         headers = {
@@ -143,7 +175,7 @@ class AIRouter:
             formatted_messages.append({"role": msg["role"], "content": msg["content"]})
             
         payload = {
-            "model": model_name,
+            "model": self.generation_model,
             "messages": formatted_messages,
             "temperature": 0.3
         }
@@ -163,9 +195,9 @@ class AIRouter:
                 break
                 
         if "translate" in last_user_query:
-            return "नमस्ते! (Translation service offline. Please retry in a few seconds.)"
+            return "I am having trouble connecting to the translation service right now. Please try again in a moment."
         elif "summarize" in last_user_query or "pdf" in last_user_query:
-            return "Summary processing offline. All AI endpoints are currently busy. Please try again shortly."
-        return "Offline recovery mode active. The Sovereign AI endpoints are rate-limited or offline. How can I assist you?"
+            return "I am currently unable to summarize the document due to a connection issue. Please try again in a moment."
+        return "I am having trouble connecting right now. How can I help you offline?"
 
 ai_router = AIRouter()

@@ -2,25 +2,15 @@
 
 import React, { useEffect, useRef } from "react";
 
-interface Node {
+interface Star {
   x: number;
   y: number;
-  targetX: number;
-  targetY: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  connections: number[];
-  label: string;
-  activation: number;
-}
-
-interface Pulse {
-  path: number[]; // Indices of nodes in the path
-  progress: number; // 0 to 1
-  speed: number;
+  z: number;
   color: string;
-  size: number;
+  baseSize: number;
+  ox?: number;
+  oy?: number;
+  isBackground?: boolean;
 }
 
 export default function AmbientCanvas() {
@@ -37,255 +27,199 @@ export default function AmbientCanvas() {
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
-    const mouse = { x: -1000, y: -1000, active: false };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-      mouse.active = true;
-    };
-
-    const handleMouseLeave = () => {
-      mouse.active = false;
-    };
+    let centerX = width / 2;
+    let centerY = height / 2;
 
     const handleResize = () => {
       if (!canvas) return;
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
+      centerX = width / 2;
+      centerY = height / 2;
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseleave", handleMouseLeave);
     window.addEventListener("resize", handleResize);
 
-    // Multilingual words representing Ideas, Learning, Connections, Growth
-    const KNOWLEDGE_WORDS = [
-      "ज्ञान", "ਸਿੱਖਿਆ", "Growth", "Build", "योजना", "ਤਰੱਕੀ", "Explore", "ਸਾਂਝ",
-      "विचार", "வளர்ச்சி", "Learn", "উন্নতি", "Connect", "જ્ઞાન", "சமூகம்", "Progress",
-      "Creation", "సృజనాత్మకత", "कौशल", "ਸੂਝ", "Discovery", "સાથી", "বন্ধু", "தோழன்"
+    // Interactive mouse parallax
+    const mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+    const handleMouseMove = (e: MouseEvent) => {
+      mouse.targetX = (e.clientX - centerX) * 0.15;
+      mouse.targetY = (e.clientY - centerY) * 0.15;
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+
+    // Initialize 3D Starfield Infinity Loop Warp
+    const starCount = 450;
+    const maxDepth = 1600;
+    const fov = 400; // Field of view / perspective projection scale
+    const stars: Star[] = [];
+
+    const starColors = [
+      "rgba(245, 158, 11, 0.8)",  // Amber/Gold
+      "rgba(99, 102, 241, 0.85)", // Indigo
+      "rgba(6, 182, 212, 0.8)",   // Cyan
+      "rgba(168, 85, 247, 0.75)", // Purple
+      "rgba(255, 255, 255, 0.9)"  // Bright White
     ];
 
-    // Create knowledge network nodes (slower drift)
-    const nodeCount = 24;
-    const nodes: Node[] = [];
+    for (let i = 0; i < starCount; i++) {
+      const isBackground = Math.random() > 0.70; // 70% tunnel warp, 30% background drift
+      let ox = 0;
+      let oy = 0;
+      
+      if (!isBackground) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * 120 + 40; // Thickness of the infinity warp tunnel
+        ox = Math.cos(angle) * radius;
+        oy = Math.sin(angle) * radius;
+      }
 
-    for (let i = 0; i < nodeCount; i++) {
-      const x = Math.random() * width;
-      const y = Math.random() * height;
-      nodes.push({
-        x,
-        y,
-        targetX: x,
-        targetY: y,
-        vx: (Math.random() - 0.5) * 0.04, // Exceedingly slow drift
-        vy: (Math.random() - 0.5) * 0.04,
-        radius: Math.random() * 1.5 + 1.2,
-        connections: [],
-        label: KNOWLEDGE_WORDS[i % KNOWLEDGE_WORDS.length],
-        activation: 0
+      stars.push({
+        x: isBackground ? (Math.random() - 0.5) * 4000 : 0,
+        y: isBackground ? (Math.random() - 0.5) * 4000 : 0,
+        z: Math.random() * maxDepth,
+        color: starColors[i % starColors.length],
+        baseSize: isBackground ? Math.random() * 1.0 + 0.4 : Math.random() * 2.2 + 0.8,
+        ox,
+        oy,
+        isBackground
       });
     }
 
-    // Connect nodes that are close to each other
-    for (let i = 0; i < nodeCount; i++) {
-      const n1 = nodes[i];
-      const distances = nodes
-        .map((n2, idx) => {
-          if (idx === i) return { idx, dist: Infinity };
-          const dx = n1.x - n2.x;
-          const dy = n1.y - n2.y;
-          return { idx, dist: Math.sqrt(dx * dx + dy * dy) };
-        })
-        .filter(d => d.dist < width * 0.35)
-        .sort((a, b) => a.dist - b.dist);
-
-      // Connect to top 2 nearest nodes
-      const maxConnections = Math.min(2, distances.length);
-      for (let j = 0; j < maxConnections; j++) {
-        const destIdx = distances[j].idx;
-        if (!n1.connections.includes(destIdx) && !nodes[destIdx].connections.includes(i)) {
-          n1.connections.push(destIdx);
-        }
-      }
-    }
-
-    // Colors: Warm Gold (#f59e0b), Soft Indigo (#6366f1), Pearl Silver (#cbd5e1)
-    const colors = ["#f59e0b", "#6366f1", "#cbd5e1"];
-
-    // Initialize active pulses along paths
-    const maxPulses = 6;
-    const pulses: Pulse[] = [];
-
-    const createPulse = (): Pulse | null => {
-      const startCandidates = nodes.map((n, idx) => ({ n, idx })).filter(c => c.n.connections.length > 0);
-      if (startCandidates.length === 0) return null;
-
-      const start = startCandidates[Math.floor(Math.random() * startCandidates.length)];
-      const nextIdx = start.n.connections[Math.floor(Math.random() * start.n.connections.length)];
-
-      return {
-        path: [start.idx, nextIdx],
-        progress: 0,
-        speed: Math.random() * 0.0012 + 0.0005, // Flowing connection speed
-        color: colors[Math.floor(Math.random() * colors.length)],
-        size: Math.random() * 1.5 + 1
-      };
-    };
-
-    for (let i = 0; i < maxPulses; i++) {
-      const p = createPulse();
-      if (p) pulses.push(p);
-    }
+    let globalRotation = 0;
+    const speed = 2.6; // Warp flight speed
 
     const animate = () => {
-      // Dark deep background
-      ctx.fillStyle = "rgba(6, 7, 13, 0.06)";
+      // Create a smooth trailing fade-out effect for star warp lines
+      ctx.fillStyle = "rgba(6, 7, 13, 0.18)";
       ctx.fillRect(0, 0, width, height);
 
-      // 1. Background ambient glows
-      const goldGlow = ctx.createRadialGradient(
-        width * 0.15, height * 0.25, 0,
-        width * 0.15, height * 0.25, width * 0.5
+      // Interpolate mouse movement for smooth parallax drift
+      mouse.x += (mouse.targetX - mouse.x) * 0.05;
+      mouse.y += (mouse.targetY - mouse.y) * 0.05;
+
+      // Draw subtle color gradients representing space nebulae
+      const nebula1 = ctx.createRadialGradient(
+        centerX + mouse.x * 0.5 - 200, centerY + mouse.y * 0.5 - 100, 0,
+        centerX + mouse.x * 0.5 - 200, centerY + mouse.y * 0.5 - 100, width * 0.7
       );
-      goldGlow.addColorStop(0, "rgba(245, 158, 11, 0.015)");
-      goldGlow.addColorStop(1, "rgba(6, 7, 13, 0)");
-      ctx.fillStyle = goldGlow;
+      nebula1.addColorStop(0, "rgba(99, 102, 241, 0.03)"); // Soft indigo glow
+      nebula1.addColorStop(1, "rgba(6, 7, 13, 0)");
+      ctx.fillStyle = nebula1;
       ctx.fillRect(0, 0, width, height);
 
-      const indigoGlow = ctx.createRadialGradient(
-        width * 0.85, height * 0.75, 0,
-        width * 0.85, height * 0.75, width * 0.5
+      const nebula2 = ctx.createRadialGradient(
+        centerX + mouse.x * 0.7 + 250, centerY + mouse.y * 0.7 + 150, 0,
+        centerX + mouse.x * 0.7 + 250, centerY + mouse.y * 0.7 + 150, width * 0.6
       );
-      indigoGlow.addColorStop(0, "rgba(99, 102, 241, 0.012)");
-      indigoGlow.addColorStop(1, "rgba(6, 7, 13, 0)");
-      ctx.fillStyle = indigoGlow;
+      nebula2.addColorStop(0, "rgba(245, 158, 11, 0.025)"); // Warm gold glow
+      nebula2.addColorStop(1, "rgba(6, 7, 13, 0)");
+      ctx.fillStyle = nebula2;
       ctx.fillRect(0, 0, width, height);
 
-      // 2. Update nodes and decay activation
-      nodes.forEach(n => {
-        n.activation = Math.max(0, n.activation - 0.008); // Slow decay
+      // Increment rotation to twist the infinity loop path
+      globalRotation += 0.0008;
 
-        n.targetX += n.vx;
-        n.targetY += n.vy;
+      // Project, update, and render stars
+      stars.forEach((star) => {
+        // Move star closer
+        star.z -= speed;
 
-        if (n.targetX < 0 || n.targetX > width) n.vx *= -1;
-        if (n.targetY < 0 || n.targetY > height) n.vy *= -1;
-
-        let dispX = 0;
-        let dispY = 0;
-
-        if (mouse.active) {
-          const dx = mouse.x - n.targetX;
-          const dy = mouse.y - n.targetY;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 200) {
-            const force = (200 - dist) / 200;
-            dispX = -(dx / dist) * force * 8;
-            dispY = -(dy / dist) * force * 8;
-          }
-        }
-
-        n.x += (n.targetX + dispX - n.x) * 0.03;
-        n.y += (n.targetY + dispY - n.y) * 0.03;
-      });
-
-      // 3. Draw connection pathways
-      ctx.lineWidth = 0.5;
-      nodes.forEach((n1, idx1) => {
-        n1.connections.forEach(idx2 => {
-          const n2 = nodes[idx2];
-          const grad = ctx.createLinearGradient(n1.x, n1.y, n2.x, n2.y);
-          // Highlight connection lines if nodes are active
-          const lineAlpha = 0.02 + (n1.activation + n2.activation) * 0.05;
-          grad.addColorStop(0, `rgba(245, 158, 11, ${lineAlpha})`);
-          grad.addColorStop(0.5, `rgba(99, 102, 241, ${lineAlpha * 0.8})`);
-          grad.addColorStop(1, `rgba(203, 213, 225, ${lineAlpha * 0.6})`);
-
-          ctx.strokeStyle = grad;
-          ctx.beginPath();
-          const midX = (n1.x + n2.x) / 2;
-          const midY = (n1.y + n2.y) / 2;
-          ctx.moveTo(n1.x, n1.y);
-          ctx.quadraticCurveTo(midX, midY - 8, n2.x, n2.y);
-          ctx.stroke();
-        });
-      });
-
-      // 4. Update and draw traveling pulses
-      for (let i = pulses.length - 1; i >= 0; i--) {
-        const p = pulses[i];
-        p.progress += p.speed;
-
-        if (p.progress >= 1) {
-          const currentEndIdx = p.path[p.path.length - 1];
-          const currentNode = nodes[currentEndIdx];
-
-          if (currentNode && currentNode.connections.length > 0) {
-            const prevIdx = p.path[p.path.length - 2];
-            const choices = currentNode.connections.filter(c => c !== prevIdx);
-            const nextIdx = choices.length > 0 
-              ? choices[Math.floor(Math.random() * choices.length)]
-              : currentNode.connections[Math.floor(Math.random() * currentNode.connections.length)];
-
-            p.path = [currentEndIdx, nextIdx];
-            p.progress = 0;
+        // Reset stars that pass the screen plane (loop infinity)
+        if (star.z <= 10) {
+          star.z = maxDepth;
+          if (!star.isBackground) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 120 + 40;
+            star.ox = Math.cos(angle) * radius;
+            star.oy = Math.sin(angle) * radius;
           } else {
-            pulses.splice(i, 1);
-            const fresh = createPulse();
-            if (fresh) pulses.push(fresh);
-            continue;
+            star.x = (Math.random() - 0.5) * 4000;
+            star.y = (Math.random() - 0.5) * 4000;
           }
         }
 
-        const n1 = nodes[p.path[0]];
-        const n2 = nodes[p.path[1]];
+        let x = star.x;
+        let y = star.y;
 
-        if (n1 && n2) {
-          const midX = (n1.x + n2.x) / 2;
-          const midY = (n1.y + n2.y) / 2;
-          const t = p.progress;
-          const u = 1 - t;
-          const px = u * u * n1.x + 2 * u * t * midX + t * t * n2.x;
-          const py = u * u * n1.y + 2 * u * t * (midY - 8) + t * t * n2.y;
+        if (!star.isBackground && star.ox !== undefined && star.oy !== undefined) {
+          // Compute trajectory along Lemniscate of Bernoulli (3D figure-eight loop)
+          const t = (star.z / maxDepth) * Math.PI * 2 + globalRotation * 1.5;
+          const scale = 500; // Lemniscate size scale
+          const denom = 1 + Math.sin(t) * Math.sin(t);
+          const curveX = (scale * Math.cos(t)) / denom;
+          const curveY = (scale * Math.sin(t) * Math.cos(t)) / denom;
 
-          // Pulse lights up node on contact
-          if (t > 0.90) {
-            n2.activation = 1.0;
-          }
-          if (t < 0.10) {
-            n1.activation = 1.0;
-          }
+          x = curveX + star.ox;
+          y = curveY + star.oy;
+        }
 
-          ctx.shadowBlur = 8;
-          ctx.shadowColor = p.color;
+        // Apply a secondary global twisting rotation over depth to make it spiral
+        const twistAngle = globalRotation * 0.2 + star.z * 0.0004;
+        const cosR = Math.cos(twistAngle);
+        const sinR = Math.sin(twistAngle);
+        
+        const rotatedX = x * cosR - y * sinR;
+        const rotatedY = x * sinR + y * cosR;
+
+        // Apply perspective projection with parallax drift
+        const px = (rotatedX / star.z) * fov + centerX + mouse.x;
+        const py = (rotatedY / star.z) * fov + centerY + mouse.y;
+
+        // Check if star fits inside screen boundaries
+        if (px >= 0 && px <= width && py >= 0 && py <= height) {
+          // Size matches closeness
+          const relativeDepth = (maxDepth - star.z) / maxDepth;
+          const currentSize = star.baseSize * (1 + relativeDepth * 2.8);
+          const opacity = Math.min(1, relativeDepth * 1.5);
+
+          // Render glowing star particle
           ctx.beginPath();
-          ctx.arc(px, py, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = p.color;
+          ctx.arc(px, py, currentSize, 0, Math.PI * 2);
+          ctx.fillStyle = star.color
+            .replace("0.8", `${opacity * 0.8}`)
+            .replace("0.85", `${opacity * 0.85}`)
+            .replace("0.9", `${opacity * 0.9}`)
+            .replace("0.75", `${opacity * 0.75}`);
           ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-      }
 
-      // 5. Draw faint, slowly fading/glowing words (Ideas/Connections/Growth) instead of random dots
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      nodes.forEach(n => {
-        const opacity = 0.08 + n.activation * 0.45;
-        const scale = 0.9 + n.activation * 0.15;
-        
-        ctx.font = `bold ${Math.floor(10 * scale)}px sans-serif`;
-        
-        if (n.activation > 0.05) {
-          ctx.shadowBlur = n.activation * 6;
-          ctx.shadowColor = "rgba(245, 158, 11, 0.35)";
-        } else {
-          ctx.shadowBlur = 0;
-        }
+          // Render speed trail line for stars near the edge (warp effect)
+          if (!star.isBackground && star.z < maxDepth * 0.4) {
+            ctx.beginPath();
+            ctx.lineWidth = currentSize * 0.4;
+            ctx.strokeStyle = star.color
+              .replace("0.8", `${opacity * 0.18}`)
+              .replace("0.85", `${opacity * 0.18}`)
+              .replace("0.9", `${opacity * 0.22}`)
+              .replace("0.75", `${opacity * 0.14}`);
+            
+            // Vector pointing outward from center
+            const prevZ = star.z + speed * 10;
+            let prevX = star.x;
+            let prevY = star.y;
+            
+            if (star.ox !== undefined && star.oy !== undefined) {
+              const prevT = (prevZ / maxDepth) * Math.PI * 2 + globalRotation * 1.5;
+              const prevScale = 500;
+              const prevDenom = 1 + Math.sin(prevT) * Math.sin(prevT);
+              const prevCurveX = (prevScale * Math.cos(prevT)) / prevDenom;
+              const prevCurveY = (prevScale * Math.sin(prevT) * Math.cos(prevT)) / prevDenom;
+              prevX = prevCurveX + star.ox;
+              prevY = prevCurveY + star.oy;
+            }
+            
+            const prevTwist = globalRotation * 0.2 + prevZ * 0.0004;
+            const prevRotX = prevX * Math.cos(prevTwist) - prevY * Math.sin(prevTwist);
+            const prevRotY = prevX * Math.sin(prevTwist) + prevY * Math.cos(prevTwist);
 
-        ctx.fillStyle = `rgba(226, 232, 240, ${opacity})`;
-        ctx.fillText(n.label, n.x, n.y);
-        ctx.shadowBlur = 0;
+            const prevPx = (prevRotX / prevZ) * fov + centerX + mouse.x;
+            const prevPy = (prevRotY / prevZ) * fov + centerY + mouse.y;
+
+            ctx.moveTo(px, py);
+            ctx.lineTo(prevPx, prevPy);
+            ctx.stroke();
+          }
+        }
       });
 
       animationFrameId = requestAnimationFrame(animate);
@@ -294,9 +228,8 @@ export default function AmbientCanvas() {
     animate();
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseleave", handleMouseLeave);
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("mousemove", handleMouseMove);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);

@@ -133,11 +133,13 @@ class AIService:
         """Translates text to target language using Gemini API with MyMemory fallback."""
         if self.use_mock:
             if target_language.lower() in ["punjabi", "pa"]:
+                if text.lower().strip().rstrip('?').strip() in ["how are you", "how are you?"]:
+                    return "ਕੀ ਹਾਲ ਹੈ?"
                 return f"[ਪੰਜਾਬੀ ਅਨੁਵਾਦ]: {text[:100]}... (ਇਹ ਇੱਕ ਨਕਲੀ ਅਨੁਵਾਦ ਹੈ।)"
             return f"[Translated to {target_language}]: {text} (Mock)"
             
         try:
-            prompt = f"Translate the following text into {target_language}. Translate accurately and maintain the original tone. Return ONLY the translated text, nothing else:\n\n{text}"
+            prompt = f"Translate the following text into {target_language}. Translate accurately, maintain the original tone, and keep the phrasing natural for local Indian readers. Return ONLY the translated text, nothing else:\n\n{text}"
             response = self.client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=prompt

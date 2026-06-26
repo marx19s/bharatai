@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MessageSquare, Folder, Bookmark, ArrowRight, ShieldCheck, Sparkles, Clock, Search, Target } from "lucide-react";
+import { MessageSquare, Folder, Bookmark, ArrowRight, ShieldCheck, Sparkles, Clock, Search, Target, Languages, FileText, Send, Globe } from "lucide-react";
 import YaarOrb from "./YaarOrb";
 
 interface LifeHubPanelProps {
   token: string | null;
   apiBaseUrl: string;
   onSelectConversation: (id: number | null) => void;
-  onNewChat: () => void;
+  onNewChat: (initialPrompt?: string, enableSearch?: boolean, attachDocId?: number | null) => void;
   onNavigateToSection: (section: string) => void;
 }
 
@@ -39,7 +39,7 @@ const LOCALIZED_DASHBOARD: Record<string, {
     resumeBanner: "Last time we were working on:",
     resumeBtn: "Resume Session",
     trustTitle: "Sovereign Trust Safeguard",
-    trustDesc: "All chat sessions are saved locally on your device. We never use your conversations for AI training.",
+    trustDesc: "All chat sessions are saved locally on your device. Training requires explicit user consent.",
     inspiration: "Progress is made one small step at a time. What are we discovering today?"
   },
   Hindi: {
@@ -54,7 +54,7 @@ const LOCALIZED_DASHBOARD: Record<string, {
     resumeBanner: "पिछली बार हम इस पर काम कर रहे थे:",
     resumeBtn: "काम जारी रखें",
     trustTitle: "संप्रभु सुरक्षा गारंटी",
-    trustDesc: "आपके सभी संवाद सुरक्षित रूप से स्थानीय डिवाइस पर संग्रहीत हैं। प्रशिक्षण के लिए कोई डेटा उपयोग नहीं होता।",
+    trustDesc: "आपके सभी संवाद सुरक्षित रूप से स्थानीय डिवाइस पर संग्रहीत हैं। प्रशिक्षण के लिए आपके स्पष्ट सहमति की आवश्यकता है।",
     inspiration: "प्रगति हर रोज़ छोटे कदमों से होती है। आज हम क्या नया करने वाले हैं?"
   },
   Punjabi: {
@@ -69,7 +69,7 @@ const LOCALIZED_DASHBOARD: Record<string, {
     resumeBanner: "ਪਿਛਲੀ ਵਾਰ ਅਸੀਂ ਇਸ 'ਤੇ ਕੰਮ ਕਰ ਰਹੇ ਸੀ:",
     resumeBtn: "ਸਫ਼ਰ ਜਾਰੀ ਰੱਖੋ",
     trustTitle: "ਸੰਪ੍ਰਭੂ ਸੁਰੱਖਿਆ ਗਾਰੰਟੀ",
-    trustDesc: "ਤੁਹਾਡੀਆਂ ਸਾਰੀਆਂ ਚੈਟਾਂ ਤੁਹਾਡੇ ਆਪਣੇ ਮੋਬਾਈਲ 'ਤੇ ਸੁਰੱਖਿਅਤ ਹਨ। ਅਸੀਂ AI ਟ੍ਰੇਨਿੰਗ ਲਈ ਡਾਟਾ ਨਹੀਂ ਵਰਤਦੇ।",
+    trustDesc: "ਤੁਹਾਡੀਆਂ ਸਾਰੀਆਂ ਚੈਟਾਂ ਤੁਹਾਡੇ ਆਪਣੇ ਮੋਬਾਈਲ 'ਤੇ ਸੁਰੱਖਿਅਤ ਹਨ। ਟ੍ਰੇਨਿੰਗ ਲਈ ਯੂਜ਼ਰ ਦੀ ਸਪੱਸ਼ਟ ਸਹਿਮਤੀ ਦੀ ਲੋੜ ਹੈ।",
     inspiration: "ਤਰੱਕੀ ਰੋਜ਼ਾਨਾ ਛੋਟੇ ਕਦਮਾਂ ਨਾਲ ਹੁੰਦੀ ਹੈ। ਅੱਜ ਅਸੀਂ ਕੀ ਨਵਾਂ ਕਰਨ ਜਾ ਰਹੇ ਹਾਂ?"
   },
   Gujarati: {
@@ -84,7 +84,7 @@ const LOCALIZED_DASHBOARD: Record<string, {
     resumeBanner: "છેલ્લી વખત આપણે આના પર કામ કરી રહ્યા હતા:",
     resumeBtn: "કામ ફરી શરૂ કરો",
     trustTitle: "સાર્વભૌમ સુરક્ષા ગેરંટી",
-    trustDesc: "તમારી બધી ચેટ્સ તમારા ઉપકરણ પર સુરક્ષિત રીતે સંગ્રહિત છે. AI તાલીમ માટે ડેટાનો ઉપયોગ થતો નથી.",
+    trustDesc: "તમારી બધી ચેટ્સ તમારા ઉપકરણ પર સુરક્ષિત રીતે સંગ્રહિત છે. તાલીમ માટે વપરાશકર્તાની સ્પષ્ટ સંમતિ જરૂરી છે.",
     inspiration: "પ્રગતિ દરરોજ નાના પગલાઓથી થાય છે. આજે આપણે શું નવું શોધીશું?"
   },
   Bengali: {
@@ -99,7 +99,7 @@ const LOCALIZED_DASHBOARD: Record<string, {
     resumeBanner: "গত সেশনে আমরা কাজ করছিলাম:",
     resumeBtn: "সেশন আবার শুরু করুন",
     trustTitle: "সার্বভৌম সুরক্ষা গ্যারান্টি",
-    trustDesc: "আপনার সমস্ত চ্যাট আপনার ডিভাইসে সুরক্ষিতভাবে সংরক্ষিত থাকে। এআই মডেল প্রশিক্ষণের জন্য ব্যবহার করা হয় না।",
+    trustDesc: "আপনার সমস্ত চ্যাট আপনার ডিভাইসে সংরক্ষিত থাকে। প্রশিক্ষণের জন্য ব্যবহারকারীর স্পষ্ট সম্মতি প্রয়োজন।",
     inspiration: "প্রতিটি ছোট পদক্ষেপই এগিয়ে নিয়ে যায়। আজ আমরা কি নতুন শিখব?"
   },
   Tamil: {
@@ -114,7 +114,7 @@ const LOCALIZED_DASHBOARD: Record<string, {
     resumeBanner: "கடந்த முறை நாம் பணிபுரிந்தது:",
     resumeBtn: "பணியைத் தொடரவும்",
     trustTitle: "இறையாண்மை பாதுகாப்பு உத்தரவாதம்",
-    trustDesc: "உங்கள் உரையாடல்கள் அனைத்தும் சாதனத்திலேயே சேமிக்கப்படும். AI பயிற்சிக்கு பயன்படுத்தப்படாது.",
+    trustDesc: "உங்கள் உரையாடல்கள் அனைத்தும் சாதனத்திலேயே சேமிக்கப்படும். பயிற்சிக்கு பயனரின் வெளிப்படையான ஒப்புதல் தேவை.",
     inspiration: "முன்னேற்றம் என்பது சிறு படிகளிலேயே ஆரம்பமாகிறது. இன்று நாம் என்ன கற்கப் போகிறோம்?"
   }
 };
@@ -137,6 +137,7 @@ export default function LifeHubPanel({
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [companionProfile, setCompanionProfile] = useState<any | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [dashboardInput, setDashboardInput] = useState("");
 
   // Dynamic Date string localized
   const getFormattedDate = () => {
@@ -259,8 +260,39 @@ export default function LifeHubPanel({
     }
   };
 
+  const handleSummarizeAction = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/documents`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const documents = await res.json();
+        if (documents && documents.length > 0) {
+          const completedDocs = documents.filter((d: any) => d.status === "completed");
+          const targetDoc = completedDocs.length > 0 ? completedDocs[0] : documents[0];
+          
+          const prompts: Record<string, string> = {
+            Hindi: "कृपया इस दस्तावेज़ का सारांश प्रस्तुत करें",
+            Punjabi: "ਕਿਰਪਾ ਕਰਕੇ ਇਸ ਦਸਤਾਵੇਜ਼ ਦਾ ਸੰਖੇਪ ਤਿਆਰ ਕਰੋ",
+            Gujarati: "કૃપા કરીને આ દસ્તાવેજનો સારાંશ આપો",
+            Tamil: "தயவுசெய்து இந்த ஆவணத்தைச் சுருக்கமாகக் கூறவும்",
+            Bengali: "অনুগ্রহ করে এই নথির সারসংক্ষেপ করুন",
+            English: "Please summarize this document"
+          };
+          const prompt = prompts[language] || prompts["English"];
+          onNewChat(prompt, false, targetDoc.id);
+        } else {
+          alert("You haven't uploaded any documents yet. Please upload a PDF in the sidebar first!");
+        }
+      }
+    } catch (e) {
+      console.error("Failed to check documents for summary:", e);
+    }
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto scroll-smooth-premium p-6 md:p-12 relative flex flex-col justify-between max-w-5xl mx-auto space-y-10 bg-[#121316] select-none text-slate-100">
+    <div className="flex-1 overflow-y-auto scroll-smooth-premium p-6 md:p-12 relative flex flex-col justify-between max-w-5xl mx-auto space-y-10 bg-[#121316] select-none text-slate-100 animate-fade-in">
       
       {/* 1. TODAY SECTION */}
       <section className="space-y-6">
@@ -277,6 +309,41 @@ export default function LifeHubPanel({
             </p>
           </div>
           <YaarOrb state="idle" size="sm" className="shrink-0 animate-pulse duration-[4000ms]" />
+        </div>
+
+        {/* QUICK ASK INPUT BOX */}
+        <div className="w-full relative flex items-center bg-slate-900/50 border border-white/5 rounded-2xl px-5 py-4 focus-within:border-amber-500/40 transition-premium shadow-lg z-10">
+          <input
+            type="text"
+            value={dashboardInput}
+            onChange={e => setDashboardInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && dashboardInput.trim()) {
+                onNewChat(dashboardInput.trim());
+                setDashboardInput("");
+              }
+            }}
+            placeholder={
+              language === "Hindi" ? "यार से कुछ भी पूछें..." :
+              language === "Punjabi" ? "ਯਾਰ ਤੋਂ ਕੁਝ ਵੀ ਪੁੱਛੋ..." :
+              language === "Gujarati" ? "યાર ને ગમે તે પૂછો..." :
+              language === "Tamil" ? "யாரிடம் எதையும் கேளுங்கள்..." :
+              language === "Bengali" ? "ইয়ারকে যেকোনো প্রশ্ন করুন..." :
+              "Ask YAAR anything to get started..."
+            }
+            className="w-full bg-transparent text-white text-xs placeholder-slate-500 outline-none pr-12 font-medium"
+          />
+          <button
+            onClick={() => {
+              if (dashboardInput.trim()) {
+                onNewChat(dashboardInput.trim());
+                setDashboardInput("");
+              }
+            }}
+            className="absolute right-3 p-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl transition-premium cursor-pointer"
+          >
+            <Send className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Personalized Welcome Resume Banner */}
@@ -308,6 +375,76 @@ export default function LifeHubPanel({
             </button>
           </div>
         )}
+      </section>
+
+      {/* QUICK ACTIONS GRID */}
+      <section className="space-y-4 animate-fade-in">
+        <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-500 px-1">
+          Quick Actions
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => onNewChat()}
+            className="p-4 rounded-2xl bg-slate-900/30 border border-white/5 flex flex-col justify-between items-start text-left cursor-pointer hover:border-amber-500/20 hover:bg-amber-950/5 hover-lift transition-premium min-h-[100px] w-full"
+          >
+            <div className="p-2 rounded-lg bg-amber-900/10 text-amber-500 border border-amber-900/20">
+              <MessageSquare className="w-4 h-4" />
+            </div>
+            <div className="mt-3">
+              <h4 className="text-xs font-bold text-slate-200">Ask YAAR</h4>
+              <p className="text-[9px] text-slate-500 font-bold mt-0.5">Start standard chat</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              const prompts: Record<string, string> = {
+                Hindi: "कृपया मेरे लिए निम्नलिखित पाठ का अनुवाद करें:",
+                Punjabi: "ਕਿਰਪਾ ਕਰਕੇ ਮੇਰੇ ਲਈ ਹੇਠਾਂ ਦਿੱਤੇ ਟੈਕਸट ਦਾ ਅਨੁਵਾਦ ਕਰੋ:",
+                Gujarati: "કૃપા કરીને મારા માટે નીચેના લખાણનો અનુવાદ કરો:",
+                Tamil: "தயவுசெய்து பின்வரும் உரையை எனக்கு மொழிபெயர்க்கவும்:",
+                Bengali: "অনুগ্রহ করে আমার জন্য নিম্নলিখিত লেখাটি অনুবাদ করুন:",
+                English: "Please translate the following text for me:"
+              };
+              onNewChat(prompts[language] || prompts["English"]);
+            }}
+            className="p-4 rounded-2xl bg-slate-900/30 border border-white/5 flex flex-col justify-between items-start text-left cursor-pointer hover:border-indigo-500/20 hover:bg-indigo-950/5 hover-lift transition-premium min-h-[100px] w-full"
+          >
+            <div className="p-2 rounded-lg bg-indigo-900/10 text-indigo-500 border border-indigo-900/20">
+              <Languages className="w-4 h-4" />
+            </div>
+            <div className="mt-3">
+              <h4 className="text-xs font-bold text-slate-200">Translate</h4>
+              <p className="text-[9px] text-slate-500 font-bold mt-0.5">Indic translations</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onNavigateToSection("projects")}
+            className="p-4 rounded-2xl bg-slate-900/30 border border-white/5 flex flex-col justify-between items-start text-left cursor-pointer hover:border-amber-500/20 hover:bg-amber-950/5 hover-lift transition-premium min-h-[100px] w-full"
+          >
+            <div className="p-2 rounded-lg bg-amber-900/10 text-amber-500 border border-amber-900/20">
+              <Folder className="w-4 h-4" />
+            </div>
+            <div className="mt-3">
+              <h4 className="text-xs font-bold text-slate-200">Projects</h4>
+              <p className="text-[9px] text-slate-500 font-bold mt-0.5">Study & work binders</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onNavigateToSection("vault")}
+            className="p-4 rounded-2xl bg-slate-900/30 border border-white/5 flex flex-col justify-between items-start text-left cursor-pointer hover:border-emerald-500/20 hover:bg-emerald-950/5 hover-lift transition-premium min-h-[100px] w-full"
+          >
+            <div className="p-2 rounded-lg bg-emerald-900/10 text-emerald-500 border border-emerald-900/20">
+              <Bookmark className="w-4 h-4" />
+            </div>
+            <div className="mt-3">
+              <h4 className="text-xs font-bold text-slate-200">Vault</h4>
+              <p className="text-[9px] text-slate-500 font-bold mt-0.5">Second brain database</p>
+            </div>
+          </button>
+        </div>
       </section>
 
       {/* 2. CONTINUE JOURNEY SECTION */}
@@ -346,7 +483,7 @@ export default function LifeHubPanel({
           )}
 
           <button
-            onClick={onNewChat}
+            onClick={() => onNewChat()}
             className="p-4 rounded-2xl border border-dashed border-slate-800 hover:border-amber-500/50 hover:bg-amber-950/10 text-center py-6 group transition-premium cursor-pointer flex flex-col items-center justify-center min-h-[100px]"
           >
             <PlusIcon />

@@ -40,6 +40,8 @@ cors_kwargs = {
 }
 if settings.CORS_ORIGIN_REGEX:
     cors_kwargs["allow_origin_regex"] = settings.CORS_ORIGIN_REGEX
+else:
+    cors_kwargs["allow_origin_regex"] = r"https://.*\.trycloudflare\.com"
 
 app.add_middleware(
     CORSMiddleware,

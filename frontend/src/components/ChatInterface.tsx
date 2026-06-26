@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { 
   Send, Mic, Globe, Sparkles, Search,
   ArrowUpRight, Paperclip, X, FileText, RefreshCw, AlertCircle, 
-  CheckCircle, BookOpen, Volume2, Smile, Edit2, Trash2, Copy, Share2, Download, ArrowRight, ShieldCheck, Bookmark, Compass
+  CheckCircle, BookOpen, Volume2, Smile, Edit2, Trash2, Copy, Share2, Download, ArrowRight, ShieldCheck, Bookmark, Compass, Folder, MoreVertical
 } from "lucide-react";
 import YaarOrb from "./YaarOrb";
 
@@ -14,14 +14,16 @@ interface Message {
   content: string;
   timestamp?: string;
   has_search?: boolean;
-  search_results?: Array<{ title: string; link: string; snippet: string }> | null;
+  search_results?: Array<{ title: string; link: string; snippet: string; source?: string; domain?: string; date?: string; summary?: string }> | null;
   rating?: number;
   feedback_notes?: string;
   versions?: string[]; // Version branching content
   currentVersionIndex?: number;
   is_translation_card?: boolean;
   translation_data?: any;
-  source?: "document" | "web" | "knowledge";
+  translations?: Record<string, string>;
+  selected_translation_lang?: string;
+  source?: "document" | "partial_document" | "web" | "knowledge";
 }
 
 interface Document {
@@ -106,7 +108,7 @@ const getTranslationDetails = (text: string) => {
   };
 }; */
 
-const renderContentFormatted = (content: string, searchResults: any[] | null | undefined) => {
+const renderContentFormatted = (content: string, searchResults: any[] | null | undefined, msgIndex?: number) => {
   if (!content) return null;
 
   // 1. Process Citations in the raw string if we have searchResults
@@ -144,9 +146,20 @@ const renderContentFormatted = (content: string, searchResults: any[] | null | u
             return (
               <a
                 key={`cit-${boldIdx}-${subIdx}`}
-                href={source.link}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`#source-card-${msgIndex}-${subPart}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (msgIndex !== undefined) {
+                    const target = document.getElementById(`source-card-${msgIndex}-${subPart}`);
+                    if (target) {
+                      target.scrollIntoView({ behavior: "smooth", block: "center" });
+                      target.classList.add("border-amber-500", "bg-amber-950/20");
+                      setTimeout(() => {
+                        target.classList.remove("border-amber-500", "bg-amber-950/20");
+                      }, 2000);
+                    }
+                  }
+                }}
                 className="text-amber-500 hover:text-amber-400 font-bold inline-block mx-0.5 font-mono text-[9px] align-super bg-amber-500/10 px-1.5 rounded hover:bg-amber-500/20 transition-premium border border-amber-500/20"
                 title={source.title}
               >
@@ -249,6 +262,29 @@ export default function ChatInterface({
   token
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [showControlsDropdown, setShowControlsDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        showControlsDropdown &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setShowControlsDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showControlsDropdown]);
+
+  const [conversationTitle, setConversationTitle] = useState("Chat Session");
   const [inputText, setInputText] = useState("");
   const [enableSearch, setEnableSearch] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -257,6 +293,50 @@ export default function ChatInterface({
   const [translatingInput, setTranslatingInput] = useState(false);
   const [translatingMessageIndex, setTranslatingMessageIndex] = useState<number | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState("Hindi");
+
+  const [projects, setProjects] = useState<any[]>([]);
+  const [activeProjectName, setActiveProjectName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadProjects = () => {
+      const saved = localStorage.getItem("yaar_projects");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setProjects(parsed);
+          // Find if activeConversationId belongs to any project
+          const activeProj = parsed.find((p: any) => (p.chatIds || []).includes(activeConversationId));
+          setActiveProjectName(activeProj ? activeProj.name : null);
+        } catch (_) {}
+      }
+    };
+
+    loadProjects();
+    window.addEventListener("yaar_projects_updated", loadProjects);
+    return () => window.removeEventListener("yaar_projects_updated", loadProjects);
+  }, [activeConversationId]);
+
+  const handleMoveToProject = (projName: string) => {
+    const saved = localStorage.getItem("yaar_projects");
+    if (!saved) return;
+    try {
+      const parsedProjects: any[] = JSON.parse(saved);
+      const updated = parsedProjects.map(p => {
+        const chatIds = p.chatIds || [];
+        if (p.name === projName) {
+          if (!chatIds.includes(activeConversationId)) {
+            return { ...p, chatIds: [...chatIds, activeConversationId] };
+          }
+          return p;
+        } else {
+          return { ...p, chatIds: chatIds.filter((id: any) => id !== activeConversationId) };
+        }
+      });
+      localStorage.setItem("yaar_projects", JSON.stringify(updated));
+      setActiveProjectName(projName === "No Project" ? null : projName);
+      window.dispatchEvent(new Event("yaar_projects_updated"));
+    } catch (_) {}
+  };
 
   // Inline editing state
   const [editingMsgIndex, setEditingMsgIndex] = useState<number | null>(null);
@@ -311,8 +391,6 @@ export default function ChatInterface({
 
   // Load conversations
   useEffect(() => {
-    setDigitizedText(null);
-    setComplianceReport(null);
     window.speechSynthesis.cancel();
     setSpeakingMessageIndex(null);
     setEditingMsgIndex(null);
@@ -337,11 +415,27 @@ export default function ChatInterface({
           });
           if (res.ok) {
             const data = await res.json();
-            const formatted = data.map((m: any) => ({
-              ...m,
-              versions: m.versions || [m.content],
-              currentVersionIndex: m.currentVersionIndex ?? 0
-            }));
+            let localParsed: any[] = [];
+            if (savedMsg) {
+              try { localParsed = JSON.parse(savedMsg); } catch (_) {}
+            }
+            const formatted = data.map((m: any, idx: number) => {
+              const localMsg = localParsed[idx];
+              const isMatch = localMsg && localMsg.role === m.role;
+              const selected_lang = isMatch ? (localMsg.selected_translation_lang || "Original") : "Original";
+              const translations = isMatch ? (localMsg.translations || {}) : {};
+              const content = (selected_lang !== "Original" && translations[selected_lang]) 
+                ? translations[selected_lang] 
+                : m.content;
+              return {
+                ...m,
+                content: content,
+                versions: isMatch ? (localMsg.versions || [m.content]) : (m.versions || [m.content]),
+                currentVersionIndex: isMatch ? (localMsg.currentVersionIndex ?? 0) : (m.currentVersionIndex ?? 0),
+                translations: translations,
+                selected_translation_lang: selected_lang
+              };
+            });
             setMessages(formatted);
             localStorage.setItem(localMsgKey, JSON.stringify(formatted));
           }
@@ -351,6 +445,19 @@ export default function ChatInterface({
       };
       loadHistory();
 
+      // Local title lookup
+      const localChatsKey = `yaar_chats_${email}`;
+      const savedLocal = localStorage.getItem(localChatsKey);
+      if (savedLocal) {
+        try {
+          const localList = JSON.parse(savedLocal);
+          const current = localList.find((c: any) => c.id === activeConversationId);
+          if (current) {
+            setConversationTitle(current.title || "Chat Session");
+          }
+        } catch (_) {}
+      }
+
       const loadDocDetails = async () => {
         try {
           const res = await fetch(`${apiBaseUrl}/api/conversations`, {
@@ -358,7 +465,10 @@ export default function ChatInterface({
           });
           if (res.ok) {
             const conversations = await res.json();
-            const current = (conversations as ConversationSummary[]).find((c) => c.id === activeConversationId);
+            const current = (conversations as any[]).find((c) => c.id === activeConversationId);
+            if (current) {
+              setConversationTitle(current.title || "Chat Session");
+            }
             
             if (current && current.document_id) {
               const docRes = await fetch(`${apiBaseUrl}/api/documents/${current.document_id}`, {
@@ -382,6 +492,28 @@ export default function ChatInterface({
       setSelectedDoc(null);
     }
   }, [activeConversationId, token, apiBaseUrl]);
+
+  // Handle auto-sending of pending prompts from Life Hub
+  useEffect(() => {
+    if (activeConversationId && messages.length === 0 && !chatLoading) {
+      if (typeof window !== "undefined") {
+        const isNewPending = localStorage.getItem("yaar_new_conversation_pending");
+        const pendingPrompt = localStorage.getItem("yaar_pending_prompt");
+        const pendingSearch = localStorage.getItem("yaar_pending_search");
+        if (isNewPending === "true") {
+          localStorage.removeItem("yaar_new_conversation_pending");
+          if (pendingSearch === "true") {
+            setEnableSearch(true);
+            localStorage.removeItem("yaar_pending_search");
+          }
+          if (pendingPrompt) {
+            localStorage.removeItem("yaar_pending_prompt");
+            handleSend(pendingPrompt);
+          }
+        }
+      }
+    }
+  }, [activeConversationId, messages.length, chatLoading]);
 
   // Document polling
   useEffect(() => {
@@ -980,7 +1112,65 @@ export default function ChatInterface({
   };
 
   // Indian Languages Translation integration
-  const handleTranslateMessage = async (idx: number, content: string) => {
+  const handleTranslateMessage = async (idx: number, targetLanguage: string) => {
+    const msg = messages[idx];
+    if (!msg) return;
+    const original = msg.versions?.[0] || msg.content;
+    const localMsgKey = activeConversationId ? `yaar_messages_${activeConversationId}` : null;
+    
+    // If target language is Original, revert instantly
+    if (targetLanguage === "Original") {
+      setMessages(prev => prev.map((m, i) => {
+        if (i === idx) {
+          const updated = {
+            ...m,
+            content: original,
+            selected_translation_lang: "Original"
+          };
+          if (localMsgKey) {
+            const saved = localStorage.getItem(localMsgKey);
+            if (saved) {
+              try {
+                const list = JSON.parse(saved);
+                list[idx] = updated;
+                localStorage.setItem(localMsgKey, JSON.stringify(list));
+              } catch (_) {}
+            }
+          }
+          return updated;
+        }
+        return m;
+      }));
+      return;
+    }
+
+    // Check cache
+    const cached = msg.translations?.[targetLanguage];
+    if (cached) {
+      setMessages(prev => prev.map((m, i) => {
+        if (i === idx) {
+          const updated = {
+            ...m,
+            content: cached,
+            selected_translation_lang: targetLanguage
+          };
+          if (localMsgKey) {
+            const saved = localStorage.getItem(localMsgKey);
+            if (saved) {
+              try {
+                const list = JSON.parse(saved);
+                list[idx] = updated;
+                localStorage.setItem(localMsgKey, JSON.stringify(list));
+              } catch (_) {}
+            }
+          }
+          return updated;
+        }
+        return m;
+      }));
+      return;
+    }
+
     setTranslatingMessageIndex(idx);
     try {
       const res = await fetch(`${apiBaseUrl}/api/tools/translate`, {
@@ -989,20 +1179,36 @@ export default function ChatInterface({
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ text: content, target_language: selectedLanguage })
+        body: JSON.stringify({ text: original, target_language: targetLanguage })
       });
       if (res.ok) {
         const data = await res.json();
         setMessages(prev => prev.map((m, i) => {
           if (i === idx) {
-            const currentVersions = m.versions || [m.content];
-            const newVersions = [...currentVersions, data.translated_text];
-            return {
+            const currentVersions = m.versions || [original];
+            const translationCache = { ...(m.translations || {}), [targetLanguage]: data.translated_text };
+            const newVersions = currentVersions.includes(data.translated_text)
+              ? currentVersions
+              : [...currentVersions, data.translated_text];
+            const updated = {
               ...m,
               content: data.translated_text,
+              translations: translationCache,
               versions: newVersions,
-              currentVersionIndex: newVersions.length - 1
+              currentVersionIndex: newVersions.length - 1,
+              selected_translation_lang: targetLanguage
             };
+            if (localMsgKey) {
+              const saved = localStorage.getItem(localMsgKey);
+              if (saved) {
+                try {
+                  const list = JSON.parse(saved);
+                  list[idx] = updated;
+                  localStorage.setItem(localMsgKey, JSON.stringify(list));
+                } catch (_) {}
+              }
+            }
+            return updated;
           }
           return m;
         }));
@@ -1075,45 +1281,14 @@ export default function ChatInterface({
         )}
         
         {/* Top controls menu header */}
-        <div className="p-4 border-b border-slate-900 flex items-center justify-between shrink-0 bg-[#06070d]/60 backdrop-blur-md">
-          <div className="flex items-center gap-3 pl-12 md:pl-0">
-            <button
-              onClick={() => onSelectConversation(null)}
-              className="flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-slate-800 text-[10px] font-black text-slate-450 hover:text-white hover:border-amber-500/35 transition-premium cursor-pointer rounded-lg shadow-sm"
-              title="Return to Home Dashboard"
-            >
-              <Compass className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-              <span>HOME</span>
-            </button>
-            <span className="text-[10px] text-slate-600 font-bold">|</span>
-            <span className="text-xs font-black uppercase tracking-wider text-slate-350">
-              Active Session
-            </span>
-            {selectedDoc ? (
-              <div className="flex items-center gap-1 bg-blue-950/40 border border-blue-900/30 rounded-full px-2.5 py-0.5 shrink-0 max-w-[200px]">
-                <span className="text-[9px] font-black text-blue-400 truncate">
-                  📄 Using Document Context ({selectedDoc.filename})
-                </span>
-                <button
-                  onClick={handleDetachDoc}
-                  className="p-0.5 hover:bg-blue-900/50 rounded text-blue-400 hover:text-white cursor-pointer"
-                  title="Detach Document"
-                >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            ) : enableSearch ? (
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-950/40 border border-emerald-900/30 text-[9px] font-black text-emerald-450 flex items-center gap-1 animate-pulse">
-                🌐 Search Enabled
-              </span>
-            ) : (
-              <span className="px-2.5 py-0.5 rounded-full bg-purple-950/40 border border-purple-900/30 text-[9px] font-black text-purple-400 flex items-center gap-1">
-                🧠 General Knowledge
-              </span>
-            )}
+        <div className={`p-4 border-b border-slate-900 flex items-center justify-between shrink-0 bg-[#06070d]/60 backdrop-blur-md ${!sidebarOpen ? "pl-14" : "pl-4"}`}>
+          <div className="flex items-center gap-3 min-w-0">
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-100 truncate font-display">
+              {conversationTitle}
+            </h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 relative">
             <button
               onClick={handleExportChat}
               disabled={messages.length === 0}
@@ -1123,12 +1298,106 @@ export default function ChatInterface({
               <Download className="w-4 h-4" />
             </button>
             <button
+              ref={buttonRef}
+              onClick={() => setShowControlsDropdown(!showControlsDropdown)}
+              className={`p-1.5 rounded-lg hover:bg-slate-900 text-slate-400 hover:text-white transition-premium cursor-pointer ${showControlsDropdown ? "bg-slate-900 text-white" : ""}`}
+              title="Workspace Controls"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => onSelectConversation(null)}
               className="p-1.5 rounded-lg hover:bg-slate-900 text-slate-400 hover:text-white transition-premium cursor-pointer border border-transparent"
               title="Return to Dashboard"
             >
               <X className="w-4 h-4" />
             </button>
+
+            {/* Dropdown Menu */}
+            {showControlsDropdown && (
+              <div 
+                ref={dropdownRef}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="absolute right-0 top-10 w-64 bg-slate-950 border border-slate-900 rounded-xl shadow-2xl p-3.5 z-50 space-y-4 animate-fade-in text-left"
+              >
+                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Workspace Menu</span>
+                  <button
+                    onClick={() => setShowControlsDropdown(false)}
+                    className="text-slate-500 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Home navigation */}
+                <button
+                  onClick={() => {
+                    onSelectConversation(null);
+                    setShowControlsDropdown(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 bg-slate-900/60 border border-slate-900 hover:border-amber-500/20 text-xs font-bold text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <Compass className="w-4 h-4 text-amber-500" />
+                  <span>Go to Home</span>
+                </button>
+
+                {/* Active Session Mode Badges */}
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500 block px-1">Active Mode</span>
+                  {selectedDoc ? (
+                    <div className="flex items-center justify-between bg-blue-950/40 border border-blue-900/30 rounded-lg p-2">
+                      <span className="text-[10px] font-black text-blue-400 truncate max-w-[170px]">
+                        📄 Document: {selectedDoc.filename}
+                      </span>
+                      <button
+                        onClick={handleDetachDoc}
+                        className="text-blue-400 hover:text-white"
+                        title="Detach Document"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : enableSearch ? (
+                    <div className="bg-emerald-950/40 border border-emerald-900/30 rounded-lg p-2 flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-[10px] font-black text-emerald-450">
+                        🌐 Live Search Enabled
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="bg-purple-950/40 border border-purple-900/30 rounded-lg p-2 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                      <span className="text-[10px] font-black text-purple-450">
+                        🧠 General Knowledge
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Project selector */}
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500 block px-1">Project Binder</span>
+                  <div className="flex items-center gap-2 bg-slate-900 border border-slate-900 rounded-lg p-2">
+                    <Folder className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <select
+                      value={activeProjectName || "No Project"}
+                      onChange={(e) => {
+                        handleMoveToProject(e.target.value);
+                      }}
+                      className="bg-transparent border-none text-[10px] font-black uppercase text-amber-550 outline-none cursor-pointer hover:text-amber-450 w-full truncate"
+                    >
+                      <option value="No Project" className="bg-[#121316] text-white">No Project</option>
+                      {projects.map(p => (
+                        <option key={p.id} value={p.name} className="bg-[#121316] text-white">{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+              </div>
+            )}
           </div>
         </div>
 
@@ -1162,7 +1431,7 @@ export default function ChatInterface({
                   if (msg.role === "assistant" && msg.is_translation_card && msg.translation_data) {
                     const data = msg.translation_data;
                     return (
-                      <div key={index} className="flex gap-4 items-start justify-start group animate-slide-in-right">
+                      <div key={index} className="flex gap-4 items-start justify-start group animate-slide-up-fade">
                         <YaarOrb state="idle" size="sm" className="shrink-0 mt-0.5" />
                         <div className="flex flex-col gap-2 max-w-[80%] min-w-[320px]">
                           <div className="p-5 rounded-2xl border bg-slate-900/60 border-slate-800/40 text-slate-200 shadow space-y-4">
@@ -1283,7 +1552,7 @@ export default function ChatInterface({
                   return (
                     <div
                       key={index}
-                      className={`flex gap-4 items-start ${isUser ? "justify-end" : "justify-start"} group animate-slide-in-right`}
+                      className={`flex gap-4 items-start ${isUser ? "justify-end" : "justify-start"} group animate-slide-up-fade`}
                     >
                       {/* Assistant Avatar */}
                       {!isUser && (
@@ -1344,13 +1613,67 @@ export default function ChatInterface({
                               </div>
                             </div>
                           ) : (
-                            renderContentFormatted(msg.content, msg.search_results)
+                            <>
+                              {renderContentFormatted(msg.content, msg.search_results, index)}
+                              {!isUser && msg.search_results && msg.search_results.length > 0 && (
+                                <div className="mt-3.5 pt-3.5 border-t border-slate-800/60 space-y-2">
+                                  <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5 pl-0.5">
+                                    <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                                    <span>Sources ({msg.search_results.length})</span>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {msg.search_results.map((result, rIdx) => (
+                                      <div
+                                        key={rIdx}
+                                        id={`source-card-${index}-${rIdx + 1}`}
+                                        onClick={() => window.open(result.link, "_blank", "noopener,noreferrer")}
+                                        className="p-3.5 rounded-2xl bg-slate-950/40 border border-slate-850 hover:border-amber-500/30 hover:bg-amber-950/5 transition-premium text-left flex flex-col justify-between gap-2.5 cursor-pointer group"
+                                      >
+                                        <div className="min-w-0 space-y-1">
+                                          <div className="flex items-center justify-between text-[8px] font-extrabold text-slate-500 uppercase tracking-wider">
+                                            <span>
+                                              [{rIdx + 1}] {result.domain || new URL(result.link).hostname.replace('www.', '')}
+                                            </span>
+                                            {result.date && (
+                                              <span>{result.date}</span>
+                                            )}
+                                          </div>
+                                          <h4 className="text-[11px] font-bold text-slate-300 group-hover:text-white transition-colors truncate">
+                                            {result.title}
+                                          </h4>
+                                          <p className="text-[10px] text-slate-455 leading-relaxed line-clamp-2 font-medium">
+                                            {result.snippet}
+                                          </p>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2 border-t border-white/5 text-[9px] font-extrabold uppercase tracking-wider">
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              navigator.clipboard.writeText(result.link);
+                                              alert("Link copied!");
+                                            }}
+                                            className="text-slate-500 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+                                            title="Copy Source Link"
+                                          >
+                                            <Copy className="w-3 h-3" />
+                                            <span>Copy Link</span>
+                                          </button>
+                                          <span className="text-amber-500 group-hover:text-amber-400 flex items-center gap-0.5">
+                                            Open ↗
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
 
                         {!isUser && (
                           <div className="flex items-center gap-1.5 mt-1 px-1">
-                            {msg.source === "document" ? (
+                            {msg.source === "document" || msg.source === "partial_document" ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-950/30 border border-blue-900/30 text-[8px] font-black uppercase tracking-wider text-blue-400 animate-fade-in">
                                 📄 From Document
                               </span>
@@ -1374,25 +1697,19 @@ export default function ChatInterface({
                           {!isUser && (
                             <div className="flex items-center gap-1.5">
                               <select
-                                value={selectedLanguage}
-                                onChange={(e) => setSelectedLanguage(e.target.value)}
+                                value={msg.selected_translation_lang || "Original"}
+                                onChange={(e) => handleTranslateMessage(index, e.target.value)}
+                                disabled={translatingMessageIndex !== null}
                                 className="bg-slate-950 border border-slate-800 rounded-lg text-[9px] font-bold px-1.5 py-0.5 text-slate-450 outline-none cursor-pointer"
                               >
+                                <option value="Original">Original</option>
                                 {INDIAN_LANGUAGES.map(lang => (
                                   <option key={lang} value={lang}>{lang}</option>
                                 ))}
                               </select>
-                              <button
-                                onClick={() => handleTranslateMessage(index, msg.content)}
-                                disabled={translatingMessageIndex !== null}
-                                className="text-[10px] font-bold text-slate-500 hover:text-amber-500 flex items-center gap-1 transition-colors"
-                              >
-                                {translatingMessageIndex === index ? (
-                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <span>Translate</span>
-                                )}
-                              </button>
+                              {translatingMessageIndex === index && (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                              )}
                             </div>
                           )}
 
@@ -1505,6 +1822,9 @@ export default function ChatInterface({
                 >
                   <Search className="w-3 h-3" />
                   <span>Search Web</span>
+                  {enableSearch && (
+                    <X className="w-3 h-3 ml-1 hover:text-rose-500 transition-colors" />
+                  )}
                 </button>
 
                 <button
@@ -1577,14 +1897,12 @@ export default function ChatInterface({
             {/* Bottom trust system banner */}
             <div className="text-center pt-1.5">
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">
-                🔒 Private by Default  •  🚫 Never Used for AI Training  •  🗑 Delete Anytime
+                🔒 Private by Default  •  Training requires explicit user consent.  •  🗑 Delete Anytime
               </span>
             </div>
 
           </div>
         </div>
-
-      </div>
 
       </div>
 
