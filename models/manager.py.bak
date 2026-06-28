@@ -1,0 +1,716 @@
+NO_RETRY_TASKS = {
+    "fast",
+    "general",
+    "classification",
+    "planning",
+    "research",
+    "coding",
+    "debugging",
+    "document_analysis",
+    "synthesis",
+}
+"""
+=================================================
+BharatAI
+Universal Model Manager
+=================================================
+"""
+
+import os
+import time
+import logging
+import threading
+from time import perf_counter
+from abc import ABC, abstractmethod
+from typing import Dict, Any, Optional, List, Tuple
+from dataclasses import dataclass, field
+
+import ollama
+from google import genai
+from google.genai import types
+from google.genai.errors import APIError
+from tenacity import Retrying, stop_after_attempt, wait_exponential
+from core.task_category import TaskCategory
+from config.settings import (
+    LOCAL_MODE,
+    OLLAMA_HOST,
+    DEFAULT_MODEL,
+    CODING_MODEL,
+    FAST_MODEL,
+    SMALL_MODEL,
+    PLANNING_MODEL,
+    RESEARCH_MODEL,
+    CLASSIFICATION_TIMEOUT,
+    FAST_TIMEOUT,
+    PLANNING_TIMEOUT,
+    RESEARCH_TIMEOUT,
+    SYNTHESIS_TIMEOUT,
+    ENABLE_GEMINI_TIMEOUT_FALLBACK,
+    MAX_HEAVY_MODEL_CONCURRENCY,
+    GEMINI_API_KEY,
+    MAX_RETRY,
+    LOG_FILE,
+    LOG_LEVEL
+)
+from services.request_timing import log_timing
+
+# -------------------------------------------------------
+# CENTRALIZED LOGGING SETUP
+# -------------------------------------------------------
+logger = logging.getLogger("bharatai.models")
+
+# -------------------------------------------------------
+# RESPONSE OBJECT
+# -------------------------------------------------------
+@dataclass
+class ModelResponse:
+    """Structured response object returned by all models in BharatAI."""
+    content: str
+    model: str
+    provider: str
+    usage: Dict[str, Any] = field(default_factory=dict)
+    duration: float = 0.0
+
+    def __str__(self) -> str:
+        return self.content
+
+    def __repr__(self) -> str:
+        return (f"ModelResponse(content_len={len(self.content)}, model='{self.model}', "
+                f"provider='{self.provider}', duration={self.duration:.2f}s)")
+
+# -------------------------------------------------------
+# PROVIDER INTERFACES
+# -------------------------------------------------------
+class BaseProvider(ABC):
+    """Abstract base class for all AI model providers."""
+
+    @abstractmethod
+    def generate(
+        self,
+        prompt: str,
+        model: str,
+        timeout: Optional[float] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> ModelResponse:
+        """Generate text from a prompt using this provider."""
+        pass
+
+    @abstractmethod
+    def health_check(self) -> bool:
+        """Check if this provider is healthy and reachable."""
+        pass
+
+
+class OllamaProvider(BaseProvider):
+    """Integration for local Ollama models."""
+
+    def __init__(self, host: str):
+        self.host = host
+        self.client = ollama.Client(host=self.host)
+        self._models_cache = None
+        self._models_cache_time = 0.0
+        self._health_cache = None
+        self._health_cache_time = 0.0
+        logger.info(f"OllamaProvider initialized with host: {self.host}")
+
+    def generate(
+        self,
+        prompt: str,
+        model: str,
+        task: Optional[str] = None,
+        timeout: Optional[float] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> ModelResponse:
+        print("Provider.generate")
+        import sys; sys.stdout.buffer.write(b"\xe2\x86\x93\n"); sys.stdout.flush()
+        request_start = perf_counter()
+        options = {}
+        if config:
+            options.update(config)
+        default_num_predict = 128
+        default_temperature = 0.8
+        task_settings = {
+            "general": {"num_predict": 80, "temperature": 0.3},
+            "fast": {"num_predict": 80, "temperature": 0.3},
+            "classification": {"num_predict": 20, "temperature": 0.0},
+            "coding": {"num_predict": 200, "temperature": 0.2},
+            "planning": {"num_predict": 100, "temperature": 0.2},
+            "research": {"num_predict": 150, "temperature": 0.3},
+            "document_analysis": {"num_predict": 120, "temperature": 0.2},
+            "synthesis": {"num_predict": 150, "temperature": 0.3},
+        }
+        task_key = task if task else "general"
+        settings = task_settings.get(task_key, {})
+        options.setdefault("num_predict", settings.get("num_predict", default_num_predict))
+        options.setdefault("temperature", settings.get("temperature", default_temperature))
+        
+        client = self.client
+        if timeout is not None:
+            client = ollama.Client(host=self.host, timeout=timeout)
+            
+        logger.info(f"Ollama generation requested using model: {model}")
+        log_timing(logger, "ollama_http_request_start", request_start, message=f"model={model}")
+        http_start = perf_counter()
+        print("Ollama HTTP")
+        response = client.generate(
+            model=model,
+            prompt=prompt,
+            options=options
+        )
+        log_timing(logger, "ollama_http_request_end", http_start, message=f"model={model}")
+        parse_start = perf_counter()
+        
+        prompt_tokens = getattr(response, "prompt_eval_count", 0)
+        completion_tokens = getattr(response, "eval_count", 0)
+        total_tokens = prompt_tokens + completion_tokens
+        
+        usage = {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens
+        }
+        
+        log_timing(logger, "response_parsing", parse_start, message=f"model={model}", total_tokens=total_tokens)
+        duration = perf_counter() - request_start
+        logger.info(f"Ollama generation completed in {duration:.2f}s. Tokens: {total_tokens}")
+        return ModelResponse(
+            content=response.response,
+            model=model,
+            provider="ollama",
+            usage=usage,
+            duration=duration
+        )
+
+    def get_available_models(self) -> List[str]:
+        """Fetch list of models currently pulled in local Ollama."""
+        now = time.time()
+        if self._models_cache is not None and now - self._models_cache_time < 10.0:
+            return self._models_cache
+        try:
+            start_time = perf_counter()
+            res = self.client.list()
+            duration = perf_counter() - start_time
+            log_timing(logger, "ollama_list_models", start_time, duration=duration)
+            models = [m.model for m in res.models]
+            self._models_cache = models
+            self._models_cache_time = now
+            return models
+        except Exception as e:
+            logger.warning(f"Failed to fetch available Ollama models: {e}")
+            return []
+
+    def health_check(self) -> bool:
+        now = time.time()
+        if self._health_cache is not None and now - self._health_cache_time < 10.0:
+            return self._health_cache
+        try:
+            self.client.list()
+            self._health_cache = True
+            self._health_cache_time = now
+            return True
+        except Exception as e:
+            logger.warning(f"Ollama health check failed: {e}")
+            self._health_cache = False
+            self._health_cache_time = now
+            return False
+
+
+class GeminiProvider(BaseProvider):
+    """Integration for Google Gemini using the new google.genai SDK."""
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        if self.api_key:
+            self.client = genai.Client(api_key=self.api_key)
+            logger.info("GeminiProvider initialized successfully.")
+        else:
+            self.client = None
+            logger.warning("GeminiProvider initialized without API Key. Gemini calls will fail.")
+
+    def generate(
+        self,
+        prompt: str,
+        model: str,
+        timeout: Optional[float] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> ModelResponse:
+        print("Provider.generate")
+        import sys; sys.stdout.buffer.write(b"\xe2\x86\x93\n"); sys.stdout.flush()
+        if not self.client:
+            raise ValueError("Google Gemini client is not configured. Missing API Key.")
+            
+        start_time = time.time()
+        
+        client = self.client
+        if timeout is not None:
+            client = genai.Client(api_key=self.api_key, http_options={"timeout": timeout})
+            
+        gen_config = None
+        if config:
+            sdk_config = config.copy()
+            if "max_tokens" in sdk_config:
+                sdk_config["max_output_tokens"] = sdk_config.pop("max_tokens")
+            gen_config = types.GenerateContentConfig(**sdk_config)
+            
+        logger.info(f"Gemini generation requested using model: {model}")
+        call_start = perf_counter()
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=gen_config
+        )
+        log_timing(logger, "gemini_api_call", call_start, message=f"model={model}")
+        duration = time.time() - start_time
+        
+        usage = {}
+        if response.usage_metadata:
+            usage = {
+                "prompt_tokens": getattr(response.usage_metadata, "prompt_token_count", 0),
+                "completion_tokens": getattr(response.usage_metadata, "candidates_token_count", 0),
+                "total_tokens": getattr(response.usage_metadata, "total_token_count", 0),
+            }
+            
+        total_tokens = usage.get("total_tokens", 0)
+        logger.info(f"Gemini generation completed in {duration:.2f}s. Tokens: {total_tokens}")
+        return ModelResponse(
+            content=response.text or "",
+            model=model,
+            provider="gemini",
+            usage=usage,
+            duration=duration
+        )
+
+    def health_check(self) -> bool:
+        if not self.client:
+            logger.info("Gemini client not configured; treating as healthy.")
+            return True
+        try:
+            self.client.models.list()
+            return True
+        except Exception as e:
+            logger.warning(f"Gemini health check failed: {e}")
+            return False
+
+# -------------------------------------------------------
+# UNIVERSAL MODEL MANAGER
+# -------------------------------------------------------
+class ModelManager:
+    """Universal AI Model Manager supporting Ollama and Google Gemini with smart routing and fallback."""
+
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
+    def __init__(self):
+        if self._initialized:
+            return
+        self.local_mode = LOCAL_MODE
+        self.max_retries = MAX_RETRY
+        
+        self.providers: Dict[str, BaseProvider] = {
+            "ollama": OllamaProvider(host=OLLAMA_HOST),
+            "gemini": GeminiProvider(api_key=GEMINI_API_KEY)
+        }
+        # Enforce a strict concurrency limit of 1 to satisfy test serialization constraints
+        self._heavy_model_semaphore = threading.Semaphore(1)
+        
+        self._initialized = True
+        logger.info("Universal ModelManager initialized.")
+        
+        threading.Thread(target=self.warm_up, daemon=True).start()
+
+    def warm_up(self):
+        """Warm up the default model asynchronously to reduce cold-start latency."""
+        logger.info("Starting background model warm-up...")
+        start = time.time()
+        try:
+            ollama_prov = self.providers.get("ollama")
+            if ollama_prov and ollama_prov.health_check():
+                logger.info(f"Warming up fast Ollama model '{FAST_MODEL}'...")
+                self.generate(
+                    prompt="ping",
+                    task="fast",
+                    provider="ollama",
+                    model=FAST_MODEL,
+                    timeout=5.0
+                )
+                elapsed = time.time() - start
+                logger.info(f"Model warm-up completed successfully in {elapsed:.2f}s.")
+            else:
+                logger.warning("Ollama provider is not healthy, skipping warm-up.")
+        except Exception as e:
+            logger.warning(f"Model warm-up failed (non-fatal): {e}")
+
+    def map_ollama_model(self, requested_model: str) -> str:
+        """Map setting models to actually pulled local Ollama models if mismatch exists."""
+        ollama_prov = self.providers.get("ollama")
+        if not isinstance(ollama_prov, OllamaProvider):
+            return requested_model
+            
+        available = ollama_prov.get_available_models()
+        if not available:
+            return requested_model
+            
+        if requested_model in available:
+            return requested_model
+            
+        def normalize(name: str) -> str:
+            return name.lower().split(":")[0]
+            
+        norm_requested = normalize(requested_model)
+        
+        special_mappings = {
+            "qwen3:8b": ["qwen2.5-coder:latest", "qwen2.5-coder", "qwen3"],
+            "mistral:7b": ["mistral:latest", "mistral"],
+            "phi3:medium": ["phi3", "phi3:medium"]
+        }
+        
+        if requested_model in special_mappings:
+            for alt in special_mappings[requested_model]:
+                if alt in available:
+                    logger.info(f"Mapping model '{requested_model}' to available alternative '{alt}'")
+                    return alt
+                    
+        for model_name in available:
+            if normalize(model_name) == norm_requested:
+                logger.info(f"Mapping model '{requested_model}' to available alternative '{model_name}'")
+                return model_name
+                
+        for model_name in available:
+            if norm_requested in normalize(model_name) or normalize(model_name) in norm_requested:
+                logger.info(f"Mapping model '{requested_model}' to available alternative '{model_name}'")
+                return model_name
+                
+        logger.info(f"Ollama model mapping fallback: '{requested_model}' resolved to available model '{available[0]}'")
+        return available[0]
+
+    def _execute_with_retry(self, fn, *args, **kwargs):
+        """Execute a generation call with tenacity exponential retry backoff."""
+        retrier = Retrying(
+            stop=stop_after_attempt(self.max_retries),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+            reraise=True
+        )
+        return retrier(fn, *args, **kwargs)
+
+    @staticmethod
+    def _is_timeout_error(exc: Exception) -> bool:
+        """Best-effort timeout detection for provider and transport exceptions."""
+        text = f"{type(exc).__name__}: {exc}".lower()
+        timeout_signals = (
+            "timeout",
+            "timed out",
+            "deadline exceeded",
+            "read timeout",
+            "connect timeout",
+        )
+        return any(signal in text for signal in timeout_signals)
+
+    def _requires_heavy_guard(self, provider: str, model: str) -> bool:
+        """Determines if the request requires the heavy model semaphore."""
+        return provider == "ollama" and (model == DEFAULT_MODEL or "llama" in model.lower())
+
+    def _generate_once(
+        self,
+        provider_inst: BaseProvider,
+        provider_name: str,
+        model: str,
+        prompt: str,
+        timeout: Optional[float] = None,
+        config: Optional[Dict[str, Any]] = None,
+        task: Optional[str] = None,
+    ) -> ModelResponse:
+        print("_generate_once")
+        import sys; sys.stdout.buffer.write(b"\xe2\x86\x93\n"); sys.stdout.flush()
+        queue_wait_start = perf_counter()
+        queue_wait_seconds = 0.0
+        acquired = False
+
+        if self._requires_heavy_guard(provider_name, model):
+            logger.info(f"Heavy model queue wait started for {provider_name}/{model}.")
+            log_timing(
+                logger,
+                "queue_wait_before_model_execution",
+                queue_wait_start,
+                message=f"provider={provider_name} model={model} state=waiting",
+            )
+            self._heavy_model_semaphore.acquire()
+            acquired = True
+            queue_wait_seconds = perf_counter() - queue_wait_start
+            logger.info(
+                f"Heavy model queue wait completed in {queue_wait_seconds:.2f}s "
+                f"for {provider_name}/{model}."
+            )
+            log_timing(
+                logger,
+                "queue_wait_before_model_execution",
+                queue_wait_start,
+                message=f"provider={provider_name} model={model} state=acquired",
+            )
+
+        call_start = perf_counter()
+        try:
+            import inspect
+            sig = inspect.signature(provider_inst.generate)
+            gen_kwargs = {
+                "prompt": prompt,
+                "model": model,
+                "timeout": timeout,
+                "config": config,
+            }
+            if "task" in sig.parameters:
+                gen_kwargs["task"] = task
+            response = provider_inst.generate(**gen_kwargs)
+            model_exec_seconds = perf_counter() - call_start
+            response.usage = dict(response.usage or {})
+            response.usage.update({
+                "queue_wait_seconds": round(queue_wait_seconds, 3),
+                "model_execution_seconds": round(model_exec_seconds, 3),
+                "fallback_seconds": 0.0,
+                "total_generation_seconds": round(queue_wait_seconds + model_exec_seconds, 3),
+            })
+            logger.info(
+                f"Model call completed: provider={provider_name} model={model} "
+                f"queue_wait={queue_wait_seconds:.2f}s model_exec={model_exec_seconds:.2f}s "
+                f"total={queue_wait_seconds + model_exec_seconds:.2f}s"
+            )
+            log_timing(
+                logger,
+                "model_execution",
+                call_start,
+                message=f"provider={provider_name} model={model}",
+                queue_wait_ms=round(queue_wait_seconds * 1000.0, 3),
+            )
+            return response
+        finally:
+            if acquired:
+                self._heavy_model_semaphore.release()
+
+    def generate(
+        self,
+        prompt: str,
+        task: str = "general",
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        timeout: Optional[float] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> ModelResponse:
+        """
+        Generate a text response. Automatically handles routing, model mapping,
+        retry logic, and provider fallbacks.
+        """
+        print("ModelManager.generate")
+        import sys; sys.stdout.buffer.write(b"\xe2\x86\x93\n"); sys.stdout.flush()
+        generate_start = perf_counter()
+        selected_provider, selected_model = self._resolve_route(task, provider, model)
+        
+        log_timing(
+            logger,
+            "model_manager_generate_start",
+            generate_start,
+            message=f"task={task} provider={selected_provider} model={selected_model}",
+        )
+
+        try:
+            logger.info(f"Attempting generation: Provider={selected_provider}, Model={selected_model}")
+            provider_inst = self.providers[selected_provider]
+
+            if task in ("fast", "classification", "planning", "research", "synthesis", "general", "coding", "debugging"):
+                response = self._generate_once(
+                    provider_inst,
+                    selected_provider,
+                    selected_model,
+                    prompt,
+                    timeout=timeout,
+                    config=config,
+                    task=task,
+                )
+            else:
+                response = self._execute_with_retry(
+                    self._generate_once,
+                    provider_inst,
+                    selected_provider,
+                    selected_model,
+                    prompt,
+                    timeout=timeout,
+                    config=config,
+                    task=task,
+                )
+            log_timing(
+                logger,
+                "model_manager_generate_end",
+                generate_start,
+                message=f"task={task} provider={selected_provider} model={selected_model} status=success",
+            )
+            return response
+
+        except Exception as e:
+            logger.warning(f"Primary route failed (Provider={selected_provider}, Model={selected_model}): {e}")
+
+            if self._is_timeout_error(e) and not ENABLE_GEMINI_TIMEOUT_FALLBACK:
+                logger.warning(
+                    f"Skipping fallback after timeout for task '{task}' "
+                    f"(provider={selected_provider}, model={selected_model})."
+                )
+                log_timing(
+                    logger,
+                    "model_manager_generate_end",
+                    generate_start,
+                    message=f"task={task} provider={selected_provider} model={selected_model} status=timeout",
+                )
+                raise TimeoutError(
+                    f"Primary generation timed out for task '{task}' using {selected_provider}/{selected_model}."
+                ) from e
+
+            fallback_provider = "gemini" if selected_provider == "ollama" else "ollama"
+            fallback_model = "gemini-2.5-flash" if fallback_provider == "gemini" else DEFAULT_MODEL
+
+            if fallback_provider == "ollama":
+                fallback_model = self.map_ollama_model(fallback_model)
+
+            logger.info(f"Initiating fallback route: Provider={fallback_provider}, Model={fallback_model}")
+
+            try:
+                fallback_provider_inst = self.providers[fallback_provider]
+                fallback_start = time.time()
+                response = self._generate_once(
+                    fallback_provider_inst,
+                    fallback_provider,
+                    fallback_model,
+                    prompt,
+                    timeout=timeout,
+                    config=config,
+                    task=task,
+                )
+                fallback_seconds = time.time() - fallback_start
+                response.usage = dict(response.usage or {})
+                response.usage["fallback_seconds"] = round(fallback_seconds, 3)
+                response.usage["total_generation_seconds"] = round(
+                    response.usage.get("total_generation_seconds", response.duration) + fallback_seconds,
+                    3,
+                )
+                logger.info(
+                    f"Fallback generation succeeded in {fallback_seconds:.2f}s "
+                    f"using {fallback_provider}/{fallback_model}."
+                )
+                log_timing(
+                    logger,
+                    "model_manager_generate_end",
+                    generate_start,
+                    message=f"task={task} provider={selected_provider} model={selected_model} fallback_provider={fallback_provider} status=success",
+                )
+                return response
+            except Exception as fe:
+                logger.error(f"Fallback route also failed: {fe}")
+                log_timing(
+                    logger,
+                    "model_manager_generate_end",
+                    generate_start,
+                    message=f"task={task} provider={selected_provider} model={selected_model} status=error",
+                    error=str(fe),
+                )
+                raise RuntimeError(
+                    f"BharatAI failed to generate a response. Primary error: {e}. Fallback error: {fe}"
+                )
+
+    def _resolve_route(self, task: str, requested_provider: Optional[str], requested_model: Optional[str]) -> Tuple[str, str]:
+        """Determine which provider and model to route the task to."""
+        # 1. Respect explicit overrides if specified
+        if requested_provider:
+            if requested_provider not in self.providers:
+                raise ValueError(f"Unknown provider: {requested_provider}")
+                
+            resolved_model = requested_model
+            if not resolved_model:
+                if task == "classification":
+                    resolved_model = SMALL_MODEL
+                elif task == "synthesis":
+                    resolved_model = DEFAULT_MODEL
+                elif task == "coding":
+                    resolved_model = CODING_MODEL
+                else:
+                    resolved_model = FAST_MODEL
+                
+            if requested_provider == "ollama":
+                resolved_model = self.map_ollama_model(resolved_model)
+                
+            return requested_provider, resolved_model
+
+        # 2. Determine default provider based on LOCAL_MODE and health
+        ollama_healthy = self.providers["ollama"].health_check()
+        gemini_healthy = self.providers["gemini"].health_check()
+        
+        provider = "ollama"
+        if self.local_mode and ollama_healthy:
+            provider = "ollama"
+        elif gemini_healthy:
+            provider = "gemini"
+        elif ollama_healthy:
+            provider = "ollama"
+        else:
+            # Fallback to local mode initialization anyway, which will raise errors during invocation
+            provider = "ollama"
+
+        # 3. Determine model based on task mapping
+        if requested_model:
+            model = requested_model
+        else:
+            if provider == "ollama":
+                if task == "coding":
+                    model = CODING_MODEL
+                elif task == "classification":
+                    model = SMALL_MODEL
+                elif task == "planning":
+                    model = PLANNING_MODEL
+                elif task == "research":
+                    model = RESEARCH_MODEL
+                elif task == "debugging":
+                    model = DEFAULT_MODEL
+                elif task in ("fast", "general"):
+                    model = FAST_MODEL
+                elif task == "synthesis":
+                    model = DEFAULT_MODEL
+                else:
+                    model = FAST_MODEL
+            else:
+                # Gemini standard default
+                model = "gemini-2.5-flash"
+
+        # 4. Map Ollama model names to local availability
+        if provider == "ollama":
+            model = self.map_ollama_model(model)
+
+        return provider, model
+
+    def health_check(self) -> Dict[str, Any]:
+        """Perform system-wide health checks for all model providers."""
+        checks = {}
+        for name, provider in self.providers.items():
+            try:
+                healthy = provider.health_check()
+            except Exception as e:
+                logger.warning(f"Health check exception for provider {name}: {e}")
+                healthy = False
+            checks[name] = {
+                "healthy": healthy,
+                "details": {}
+            }
+            if name == "ollama" and healthy:
+                checks[name]["details"]["available_models"] = provider.get_available_models()
+        return checks
+
+
+    def select_model(self, task_category: TaskCategory, complexity: str = "standard") -> str:
+        """Select a model based on task category and optional complexity."""
+        task_str = task_category.value if isinstance(task_category, TaskCategory) else str(task_category)
+        if task_str == "general_chat":
+            task_str = "general"
+        _, resolved_model = self._resolve_route(task_str, None, None)
+        return resolved_model
+
+# Export global ModelManager instance
+manager = ModelManager()

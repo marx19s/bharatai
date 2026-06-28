@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+.venv/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+
+# ChromaDB
+chroma_db/
+
+# Build
+dist/
+build/
+
+# Operating System
+.DS_Store
+Thumbs.db

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BharatAI OS - Command Center</title>
+  <!-- Outfit Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Video Background with smooth fade overlay -->
+  <div class="video-container">
+    <video autoplay muted loop playsinline id="bg-video">
+      <source src="https://cdn.motionarray.com/stock-video/retro-astronaut-floating-in-space-loop-2041029.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+  </div>
+
+  <!-- Landing Hero Section -->
+  <div id="landing-hero" class="active">
+    <div class="hero-content">
+      <div class="logo-glow">⚡</div>
+      <h1 class="apple-heading">BharatAI</h1>
+      <p class="subtitle">Your Local-First AI Operating System</p>
+      <p id="animated-tagline" class="animated-sub">Orchestrating intelligent agents in local-first environment...</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="showDashboard()">
+          <i data-lucide="play"></i> Start Mission
+        </button>
+        <button class="btn btn-secondary" onclick="showDashboard()">
+          <i data-lucide="terminal"></i> Open Command Center
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Command Center -->
+  <div id="command-center" class="hidden">
+    <header class="app-header">
+      <div class="header-logo" onclick="showLanding()">
+        <span class="logo-icon">⚡</span>
+        <div class="brand">
+          <h2>BharatAI</h2>
+          <span class="version-tag">OS v1.0.0</span>
+        </div>
+      </div>
+      <div class="global-hud">
+        <div class="hud-item">
+          <i data-lucide="cpu" class="icon-blue"></i>
+          <div>
+            <span class="hud-label">CPU LOAD</span>
+            <span class="hud-value" id="hud-cpu">-- %</span>
+          </div>
+        </div>
+        <div class="hud-item">
+          <i data-lucide="database" class="icon-purple"></i>
+          <div>
+            <span class="hud-label">RAM USAGE</span>
+            <span class="hud-value" id="hud-ram">-- GB</span>
+          </div>
+        </div>
+        <div class="hud-item">
+          <i data-lucide="activity" class="icon-emerald"></i>
+          <div>
+            <span class="hud-label">ONLINE AGENTS</span>
+            <span class="hud-value" id="hud-agents">-- / 9</span>
+          </div>
+        </div>
+        <div class="hud-item">
+          <i data-lucide="clock" class="icon-amber"></i>
+          <div>
+            <span class="hud-label">AVG RESPONSE</span>
+            <span class="hud-value" id="hud-latency">-- s</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-controls">
+        <button class="btn btn-icon" id="dev-mode-btn" onclick="toggleDeveloperMode()" title="Toggle Developer Mode">
+          <i data-lucide="settings"></i>
+          <span>DEV MODE</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <!-- Left Panel: Chat & Workflow -->
+      <section class="left-panel">
+        <!-- Workflow Pipeline Visualizer -->
+        <div class="glass-panel pipeline-panel">
+          <div class="panel-header">
+            <h3><i data-lucide="git-commit"></i> Agent Workflow Pipeline</h3>
+          </div>
+          <div class="pipeline-flow" id="pipeline-nodes">
+            <div class="node active" id="node-user">
+              <i data-lucide="user"></i>
+              <span>User</span>
+            </div>
+            <div class="connector"><div class="connector-progress"></div></div>
+            <div class="node" id="node-neo">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80" alt="NEO" />
+              <span>NEO</span>
+            </div>
+            <div class="connector"><div class="connector-progress"></div></div>
+            <div class="node" id="node-atlas">
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&h=80&q=80" alt="ATLAS" />
+              <span>ATLAS</span>
+            </div>
+            <div class="connector"><div class="connector-progress"></div></div>
+            <div class="node" id="node-orion">
+              <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=80&h=80&q=80" alt="ORION" />
+              <span>ORION</span>
+            </div>
+            <div class="connector"><div class="connector-progress"></div></div>
+            <div class="node" id="node-apex">
+              <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=80&h=80&q=80" alt="APEX" />
+              <span>APEX</span>
+            </div>
+            <div class="connector"><div class="connector-progress"></div></div>
+            <div class="node" id="node-judge">
+              <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&h=80&q=80" alt="JUDGE" />
+              <span>JUDGE</span>
+            </div>
+            <div class="connector"><div class="connector-progress"></div></div>
+            <div class="node" id="node-lumina">
+              <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&h=80&q=80" alt="LUMINA" />
+              <span>LUMINA</span>
+            </div>
+            <div class="connector"><div class="connector-progress"></div></div>
+            <div class="node" id="node-response">
+              <i data-lucide="check-circle-2"></i>
+              <span>Result</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Workspace -->
+        <div class="glass-panel chat-panel">
+          <div id="chat-messages" class="chat-messages">
+            <!-- Initial Greeting -->
+            <div class="chat-message assistant">
+              <div class="message-avatar">⚡</div>
+              <div class="message-content">
+                <p>Welcome to <strong>BharatAI Command Center</strong>. Enter a high-level mission or task below to orchestrate the agent roster.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Developer Log View (Collapsible) -->
+          <div id="developer-log-area" class="developer-log-area hidden">
+            <div class="dev-header">
+              <span><i data-lucide="terminal"></i> System Execution Logs</span>
+              <button class="btn btn-sm btn-text" onclick="clearDevLogs()">Clear</button>
+            </div>
+            <pre id="dev-log-content">Initializing dev mode logs...</pre>
+          </div>
+
+          <div class="chat-input-container">
+            <textarea id="chat-input" placeholder="Type your high-level goal or task (e.g. 'Draft an analysis of my logs, process it using the echo agent, and summarize')" rows="1"></textarea>
+            <button class="btn btn-primary btn-send" id="btn-send-task" onclick="dispatchGoal()">
+              <i data-lucide="send"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Agents & Roster -->
+      <section class="right-panel">
+        <!-- Agent Roster Grid -->
+        <div class="glass-panel roster-panel">
+          <div class="panel-header">
+            <h3><i data-lucide="users"></i> Active Specialist Roster</h3>
+            <span class="roster-count" id="roster-active-count">9 Active</span>
+          </div>
+          <div class="agent-grid" id="agent-grid">
+            <!-- Cards will be injected dynamically by script.js -->
+          </div>
+        </div>
+
+        <!-- System Activity Feed -->
+        <div class="glass-panel feed-panel">
+          <div class="panel-header">
+            <h3><i data-lucide="list-todo"></i> Live Operations Feed</h3>
+          </div>
+          <div class="activity-feed" id="activity-feed-list">
+            <!-- Live logs will feed here -->
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

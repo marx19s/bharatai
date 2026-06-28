@@ -1,0 +1,128 @@
+/* styles/ui.css */
+/* Global dark theme with Netflix/Apple blend */
+:root {
+  --font-family: 'Inter', sans-serif;
+  --gradient-bg: linear-gradient(135deg, #0d0d0d, #1a1a2e);
+  --card-bg: rgba(255, 255, 255, 0.08);
+  --card-blur: 12px;
+  --text-primary: #ffffff;
+  --text-secondary: #aaaaaa;
+  --accent: #ff3b30; /* Apple style red accent for highlights */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--gradient-bg);
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: -1;
+}
+
+.content {
+  position: relative;
+  max-width: 1200px;
+  width: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+  justify-items: center;
+}
+
+.agent-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(var(--card-blur));
+  border-radius: 12px;
+  padding: 1rem;
+  width: 100%;
+  max-width: 220px;
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.agent-card:hover {
+  transform: translateY(-4px);
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 0.5rem;
+  border: 3px solid var(--accent);
+}
+
+.agent-name {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.status-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  box-shadow: 0 0 0 0 rgba(255,255,255,0.5);
+}
+
+.status-indicator.active {
+  background: #4caf50; /* green */
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.idle {
+  background: #ff9800; /* orange */
+  animation: pulse 3s infinite;
+}
+
+.status-indicator.sleeping {
+  background: #9e9e9e; /* gray */
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+}
