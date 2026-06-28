@@ -1,17 +1,1 @@
-[
-    {
-        "role": "user",
-        "content": "Hello BharatAI",
-        "sender": "user"
-    },
-    {
-        "role": "assistant",
-        "content": "\n--- Task task_1: Draft the status note (Executed by: default) ---\ntask result\n",
-        "sender": "neo"
-    },
-    {
-        "role": "assistant",
-        "content": "\n--- Task task_1: Draft the status note (Executed by: default) ---\ntask result\n",
-        "sender": "neo"
-    }
-]
+[]

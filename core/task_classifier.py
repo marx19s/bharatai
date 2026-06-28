@@ -39,7 +39,7 @@ class TaskClassifier:
                 prompt=self._prompt(request),
                 task="classification",
                 provider="ollama",
-                model="qwen2.5:1.5b",
+                model=SMALL_MODEL,
                 timeout=CLASSIFICATION_TIMEOUT,
                 config={"temperature": 0.0, "max_tokens": 10}
             )

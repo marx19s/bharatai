@@ -398,44 +398,34 @@ class APIRequestHandler(BaseHTTPRequestHandler):
         elif path == '/api/dispatch-json':
             goal = data.get("goal")
             logger.info(f"[LOG] Request received: POST /api/dispatch-json. Goal: '{goal}'")
-            validation_start = time.perf_counter()
-            log_timing(
-                logger,
-                "request_validation",
-                validation_start,
-                message="goal_present" if goal is not None else "goal_missing",
-            )
             if goal is None:
-                logger.warning("[LOG] Request missing 'goal' parameter. Returning 400.")
-                self._send_json({
-                    "success": False,
-                    "error": "Missing 'goal' parameter",
-                    "traceback": "",
-                    "stage": "workflow_dispatch"
-                }, status=400)
+                self._send_json({"success": False, "error": "Missing 'goal'"}, status=400)
                 return
 
+            # Ensure dispatch_execution is defined and handle workflow execution safely
+            dispatch_execution = None
             try:
-                print("HTTP")
-                import sys; sys.stdout.buffer.write(b"\xe2\x86\x93\n"); sys.stdout.flush()
-                logger.info("[LOG] Starting workflow execution for JSON response...")
+                # Execute the workflow (single point of failure)
                 dispatch_execution = execute_dispatch_workflow(goal)
-                logger.info("[LOG] Workflow execution completed for JSON response.")
+                # Validate the result; must not be None
+                if dispatch_execution is None:
+                    raise ValueError("execute_dispatch_workflow returned None")
+
+                # Build success response preserving original fields
                 self._send_json({
                     "success": True,
                     "goal": goal,
-                    "result": dispatch_execution.formatted_output,
-                    "elapsed": dispatch_execution.elapsed,
-                    "workflow": dispatch_execution.workflow_result.to_dict()
+                    "result": getattr(dispatch_execution, "formatted_output", None),
+                    "elapsed": getattr(dispatch_execution, "elapsed", None)
                 })
-                logger.info(f"[LOG] JSON response returned. Total execution time: {dispatch_execution.elapsed:.2f}s")
             except Exception as e:
-                logger.error(f"[LOG] Error during workflow dispatch-json endpoint: {e}\n{traceback.format_exc()}")
+                # Log full traceback for debugging
+                logger.exception("Workflow dispatch failed")
                 self._send_json({
                     "success": False,
                     "error": str(e),
-                    "traceback": traceback.format_exc(),
-                    "stage": "workflow_dispatch"
+                    "stage": "workflow_dispatch",
+                    "traceback": traceback.format_exc()
                 }, status=500)
         else:
             self.send_response(404)
@@ -509,58 +499,22 @@ def start_api_server():
     except Exception as e:
         logger.error(f"API server failed to start: {e}")
 
-# Start the server thread exactly once using Streamlit session tracking
-if __name__ == "__main__":
-    start_api_server()
+# Start the server thread exactly once using Streamlit session tracking in a background daemon thread
+if "api_server_thread_started" not in st.session_state:
+    import threading
+    t = threading.Thread(target=start_api_server, daemon=True)
+    t.start()
+    st.session_state["api_server_thread_started"] = True
 
 # -------------------------------------------------------
 # STREAMLIT UI INJECTION
 # -------------------------------------------------------
 st.set_page_config(
-    page_title=f"{APP_NAME} OS Command Center",
+    page_title=f"{APP_NAME} Headquarters Dashboard",
     page_icon="⚡",
     layout="wide"
 )
 
-# Custom CSS to hide Streamlit header, footer, padding and sidebar
-st.markdown(
-    """
-    <style>
-    /* Hide Main Menu / Header / Footer */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Remove streamlit padding */
-    .block-container {
-        padding-top: 0rem !important;
-        padding-bottom: 0rem !important;
-        padding-left: 0rem !important;
-        padding-right: 0rem !important;
-    }
-    
-    /* Make iframe fill screen */
-    iframe {
-        width: 100vw !important;
-        height: 100vh !important;
-        border: none !important;
-        display: block;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-    }
-    
-    /* Hide scrollbars on parent */
-    div.stApp {
-        overflow: hidden !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# Inject Full Screen Iframe pointing to our API server's static landing page
-if hasattr(st, "iframe"):
-    st.iframe("http://localhost:8502/", height=1000)
-else:
-    components.iframe("http://localhost:8502/", height=1000)
+# Render the modular dashboard
+from ui.dashboard import render_dashboard
+render_dashboard()

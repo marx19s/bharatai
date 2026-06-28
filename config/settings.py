@@ -165,7 +165,7 @@ RESEARCH_MODEL = "qwen2.5:1.5b"
 CODING_MODEL = "qwen2.5:1.5b"
 
 # Classification
-SMALL_MODEL = "qwen2.5:1.5b"
+SMALL_MODEL = "phi3:medium"
 
 # -------------------------------------------------------
 # TIMEOUTS

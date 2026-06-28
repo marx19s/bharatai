@@ -9,14 +9,10 @@ import requests
 from config.settings import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, LOG_FILE, LOG_LEVEL
 
 logger = logging.getLogger("bharatai.services.telegram")
+# Use existing logger configuration; avoid adding new handlers that may close unexpectedly.
+# Ensure logger has at least a NullHandler to prevent 'No handler found' warnings.
 if not logger.handlers:
-    logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
-    try:
-        fh = logging.FileHandler(LOG_FILE, encoding="utf-8")
-        fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-        logger.addHandler(fh)
-    except Exception as e:
-        print(f"Failed to set up file logger in telegram service: {e}")
+    logger.addHandler(logging.NullHandler())
 
 def send_telegram_message(message: str) -> bool:
     """Send a notification message to the configured Telegram chat."""
@@ -32,22 +28,25 @@ def send_telegram_message(message: str) -> bool:
     }
 
     try:
-        logger.info("Attempting to send Telegram notification...")
+        logger.debug("Attempting to send Telegram notification...")
         response = requests.post(url, json=payload, timeout=10)
         if response.status_code == 200:
-            logger.info("Telegram notification sent successfully.")
+            logger.debug("Telegram notification sent successfully.")
             return True
         else:
             # If markdown parsing failed, retry with plain text
-            logger.warning(f"Failed to send Telegram message with Markdown: {response.text}. Retrying as plain text...")
+            logger.debug(f"Failed to send Telegram message with Markdown: {response.text}. Retrying as plain text...")
             payload.pop("parse_mode", None)
-            response = requests.post(url, json=payload, timeout=10)
-            if response.status_code == 200:
-                logger.info("Telegram notification sent successfully (plain text fallback).")
-                return True
+            try:
+                response = requests.post(url, json=payload, timeout=10)
+                if response.status_code == 200:
+                    logger.debug("Telegram notification sent successfully (plain text fallback).")
+                    return True
+            except Exception as e:
+                logger.debug(f"Telegram plain text send exception suppressed: {e}")
             
-            logger.error(f"Failed to send Telegram message: {response.text}")
+            logger.debug(f"Failed to send Telegram message: {response.text}")
             return False
     except Exception as e:
-        logger.error(f"Error sending Telegram message: {e}")
+        logger.debug(f"Error sending Telegram message suppressed: {e}")
         return False

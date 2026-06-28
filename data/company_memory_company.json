@@ -1,0 +1,1835 @@
+{
+    "8d0b1142d68b4f6fb2bcddae1ad45454": {
+        "type": "dashboard_state",
+        "timestamp": 1782664356.6314816,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Busy",
+                    "current_task": "Executing task",
+                    "progress": 10,
+                    "last_update": 1782664356.6314461
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770024
+                },
+                {
+                    "name": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770036
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770039
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770048
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206495,
+                    "last_activity": 1782664360.5367222,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065005,
+                    "last_activity": 1782664328.2065008,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065034,
+                    "last_activity": 1782664328.2065034,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065048,
+                    "last_activity": 1782664328.2065048,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065055,
+                    "last_activity": 1782664328.2065058,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065065,
+                    "last_activity": 1782664328.2065067,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065077,
+                    "last_activity": 1782664328.2065077,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065089,
+                    "last_activity": 1782664379.9122314,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.20651,
+                    "last_activity": 1782664328.20651,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206511,
+                    "last_activity": 1782664328.206511,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 0,
+                "failed_tasks": 0,
+                "active_agents": 1,
+                "uptime": 28.45447063446045
+            }
+        },
+        "id": "8d0b1142d68b4f6fb2bcddae1ad45454"
+    },
+    "674e80762fb2445ea65bd63ce16788f7": {
+        "type": "dashboard_state",
+        "timestamp": 1782664356.633525,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Busy",
+                    "current_task": "Executing task",
+                    "progress": 10,
+                    "last_update": 1782664356.6334946
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471543
+                },
+                {
+                    "name": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471548
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471552
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.947156
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471703,
+                    "last_activity": 1782664360.5391176,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947175,
+                    "last_activity": 1782664328.9471753,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947178,
+                    "last_activity": 1782664328.9471781,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471798,
+                    "last_activity": 1782664328.9471798,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471812,
+                    "last_activity": 1782664328.9471815,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471836,
+                    "last_activity": 1782664328.9471836,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471858,
+                    "last_activity": 1782664328.947186,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471877,
+                    "last_activity": 1782664379.9169595,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471898,
+                    "last_activity": 1782664328.9471898,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471912,
+                    "last_activity": 1782664328.9471912,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 0,
+                "failed_tasks": 0,
+                "active_agents": 1,
+                "uptime": 27.686365127563477
+            }
+        },
+        "id": "674e80762fb2445ea65bd63ce16788f7"
+    },
+    "7946e2d513d94517b6022d9f0976eff4": {
+        "type": "activity",
+        "event_type": "TaskStarted",
+        "emoji": "▶️",
+        "label": "Task Started",
+        "status": "running",
+        "agent": "atlas",
+        "department": "CEO",
+        "task": "—",
+        "duration": null,
+        "error": null,
+        "timestamp": 1782664356.631087,
+        "id": "7946e2d513d94517b6022d9f0976eff4"
+    },
+    "2bf265b00c4d4735a1fbd194ee545ac0": {
+        "type": "dashboard_state",
+        "timestamp": 1782664360.5367558,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664360.536735
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770024
+                },
+                {
+                    "name": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770036
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770039
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770048
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206495,
+                    "last_activity": 1782664360.5367222,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065005,
+                    "last_activity": 1782664328.2065008,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065034,
+                    "last_activity": 1782664328.2065034,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065048,
+                    "last_activity": 1782664328.2065048,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065055,
+                    "last_activity": 1782664328.2065058,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065065,
+                    "last_activity": 1782664328.2065067,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065077,
+                    "last_activity": 1782664328.2065077,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065089,
+                    "last_activity": 1782664379.9122314,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.20651,
+                    "last_activity": 1782664328.20651,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206511,
+                    "last_activity": 1782664328.206511,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 1,
+                "failed_tasks": 0,
+                "active_agents": 0,
+                "uptime": 32.35975241661072
+            }
+        },
+        "id": "2bf265b00c4d4735a1fbd194ee545ac0"
+    },
+    "4b15d4e2fa504ccd98c368d2b8a481cf": {
+        "type": "dashboard_state",
+        "timestamp": 1782664360.539145,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664360.539126
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471543
+                },
+                {
+                    "name": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471548
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471552
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.947156
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471703,
+                    "last_activity": 1782664360.5391176,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947175,
+                    "last_activity": 1782664328.9471753,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947178,
+                    "last_activity": 1782664328.9471781,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471798,
+                    "last_activity": 1782664328.9471798,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471812,
+                    "last_activity": 1782664328.9471815,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471836,
+                    "last_activity": 1782664328.9471836,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471858,
+                    "last_activity": 1782664328.947186,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471877,
+                    "last_activity": 1782664379.9169595,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471898,
+                    "last_activity": 1782664328.9471898,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471912,
+                    "last_activity": 1782664328.9471912,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 1,
+                "failed_tasks": 0,
+                "active_agents": 0,
+                "uptime": 31.591987133026123
+            }
+        },
+        "id": "4b15d4e2fa504ccd98c368d2b8a481cf"
+    },
+    "654b3d137a23439f85e39b2cb598bd4a": {
+        "type": "notification",
+        "category": "completed",
+        "message": "Task successfully completed: Unknown Task",
+        "timestamp": 1782664360.5412228,
+        "id": "654b3d137a23439f85e39b2cb598bd4a"
+    },
+    "ea7ef5505fb5434094493b606f8cf0a9": {
+        "type": "activity",
+        "event_type": "TaskCompleted",
+        "emoji": "✅",
+        "label": "Task Completed",
+        "status": "success",
+        "agent": "atlas",
+        "department": "CEO",
+        "task": "—",
+        "duration": null,
+        "error": null,
+        "timestamp": 1782664360.536521,
+        "id": "ea7ef5505fb5434094493b606f8cf0a9"
+    },
+    "fd9a02f6916a415c916f904d97c02b39": {
+        "type": "dashboard_state",
+        "timestamp": 1782664360.5560608,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664360.536735
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770024
+                },
+                {
+                    "name": "Research",
+                    "status": "Busy",
+                    "current_task": "Explain Python decorators.",
+                    "progress": 10,
+                    "last_update": 1782664360.556041
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770039
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770048
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206495,
+                    "last_activity": 1782664360.5367222,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065005,
+                    "last_activity": 1782664328.2065008,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065034,
+                    "last_activity": 1782664328.2065034,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065048,
+                    "last_activity": 1782664328.2065048,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065055,
+                    "last_activity": 1782664328.2065058,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065065,
+                    "last_activity": 1782664328.2065067,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065077,
+                    "last_activity": 1782664328.2065077,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065089,
+                    "last_activity": 1782664379.9122314,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.20651,
+                    "last_activity": 1782664328.20651,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206511,
+                    "last_activity": 1782664328.206511,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 1,
+                "failed_tasks": 0,
+                "active_agents": 1,
+                "uptime": 32.37905716896057
+            }
+        },
+        "id": "fd9a02f6916a415c916f904d97c02b39"
+    },
+    "44efe90b2aad40fc9a5168147ace212c": {
+        "type": "dashboard_state",
+        "timestamp": 1782664360.5603383,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664360.539126
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471543
+                },
+                {
+                    "name": "Research",
+                    "status": "Busy",
+                    "current_task": "Explain Python decorators.",
+                    "progress": 10,
+                    "last_update": 1782664360.5603147
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471552
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.947156
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471703,
+                    "last_activity": 1782664360.5391176,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947175,
+                    "last_activity": 1782664328.9471753,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947178,
+                    "last_activity": 1782664328.9471781,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471798,
+                    "last_activity": 1782664328.9471798,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471812,
+                    "last_activity": 1782664328.9471815,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471836,
+                    "last_activity": 1782664328.9471836,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471858,
+                    "last_activity": 1782664328.947186,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471877,
+                    "last_activity": 1782664379.9169595,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471898,
+                    "last_activity": 1782664328.9471898,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471912,
+                    "last_activity": 1782664328.9471912,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 1,
+                "failed_tasks": 0,
+                "active_agents": 1,
+                "uptime": 31.613178968429565
+            }
+        },
+        "id": "44efe90b2aad40fc9a5168147ace212c"
+    },
+    "39822a5ccd7448d286c25061d5686c59": {
+        "type": "activity",
+        "event_type": "TaskStarted",
+        "emoji": "▶️",
+        "label": "Task Started",
+        "status": "running",
+        "agent": "orion",
+        "department": "Research",
+        "task": "Explain Python decorators.",
+        "duration": null,
+        "error": null,
+        "timestamp": 1782664360.555878,
+        "id": "39822a5ccd7448d286c25061d5686c59"
+    },
+    "55d31df24e4f4c8f97001586b4edd616": {
+        "type": "dashboard_state",
+        "timestamp": 1782664366.3866117,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664360.536735
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770024
+                },
+                {
+                    "name": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664366.386595
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770039
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770048
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206495,
+                    "last_activity": 1782664360.5367222,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065005,
+                    "last_activity": 1782664328.2065008,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065034,
+                    "last_activity": 1782664328.2065034,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065048,
+                    "last_activity": 1782664328.2065048,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065055,
+                    "last_activity": 1782664328.2065058,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065065,
+                    "last_activity": 1782664328.2065067,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065077,
+                    "last_activity": 1782664328.2065077,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065089,
+                    "last_activity": 1782664379.9122314,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.20651,
+                    "last_activity": 1782664328.20651,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206511,
+                    "last_activity": 1782664328.206511,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 2,
+                "failed_tasks": 0,
+                "active_agents": 0,
+                "uptime": 38.20960974693298
+            }
+        },
+        "id": "55d31df24e4f4c8f97001586b4edd616"
+    },
+    "75c706058fd34631aa84758a70d12844": {
+        "type": "dashboard_state",
+        "timestamp": 1782664366.3903384,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664360.539126
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471543
+                },
+                {
+                    "name": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664366.3903177
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471552
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.947156
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471703,
+                    "last_activity": 1782664360.5391176,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947175,
+                    "last_activity": 1782664328.9471753,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947178,
+                    "last_activity": 1782664328.9471781,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471798,
+                    "last_activity": 1782664328.9471798,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471812,
+                    "last_activity": 1782664328.9471815,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471836,
+                    "last_activity": 1782664328.9471836,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471858,
+                    "last_activity": 1782664328.947186,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471877,
+                    "last_activity": 1782664379.9169595,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471898,
+                    "last_activity": 1782664328.9471898,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471912,
+                    "last_activity": 1782664328.9471912,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 2,
+                "failed_tasks": 0,
+                "active_agents": 0,
+                "uptime": 37.44317984580994
+            }
+        },
+        "id": "75c706058fd34631aa84758a70d12844"
+    },
+    "83927f10a8c9413b9388f018c9ef7e2e": {
+        "type": "notification",
+        "category": "completed",
+        "message": "Task successfully completed: Explain Python decorators.",
+        "timestamp": 1782664366.3937132,
+        "id": "83927f10a8c9413b9388f018c9ef7e2e"
+    },
+    "34894478b58f4506ab270c163db0d605": {
+        "type": "activity",
+        "event_type": "TaskCompleted",
+        "emoji": "✅",
+        "label": "Task Completed",
+        "status": "success",
+        "agent": "orion",
+        "department": "Research",
+        "task": "Explain Python decorators.",
+        "duration": null,
+        "error": null,
+        "timestamp": 1782664366.3863745,
+        "id": "34894478b58f4506ab270c163db0d605"
+    },
+    "515a553204a34768bccd5c02ca8655f7": {
+        "type": "dashboard_state",
+        "timestamp": 1782664374.0204775,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664360.536735
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770024
+                },
+                {
+                    "name": "Research",
+                    "status": "Busy",
+                    "current_task": "Summarize the attached PDF.",
+                    "progress": 10,
+                    "last_update": 1782664374.0204573
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770039
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770048
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206495,
+                    "last_activity": 1782664360.5367222,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065005,
+                    "last_activity": 1782664328.2065008,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065034,
+                    "last_activity": 1782664328.2065034,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065048,
+                    "last_activity": 1782664328.2065048,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065055,
+                    "last_activity": 1782664328.2065058,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065065,
+                    "last_activity": 1782664328.2065067,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065077,
+                    "last_activity": 1782664328.2065077,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065089,
+                    "last_activity": 1782664379.9122314,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.20651,
+                    "last_activity": 1782664328.20651,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206511,
+                    "last_activity": 1782664328.206511,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 2,
+                "failed_tasks": 0,
+                "active_agents": 1,
+                "uptime": 45.84347319602966
+            }
+        },
+        "id": "515a553204a34768bccd5c02ca8655f7"
+    },
+    "4fc25f7b492c42a0bfd40faf7da30c11": {
+        "type": "dashboard_state",
+        "timestamp": 1782664374.0265925,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664360.539126
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471543
+                },
+                {
+                    "name": "Research",
+                    "status": "Busy",
+                    "current_task": "Summarize the attached PDF.",
+                    "progress": 10,
+                    "last_update": 1782664374.026567
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471552
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.947156
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471703,
+                    "last_activity": 1782664360.5391176,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947175,
+                    "last_activity": 1782664328.9471753,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947178,
+                    "last_activity": 1782664328.9471781,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471798,
+                    "last_activity": 1782664328.9471798,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471812,
+                    "last_activity": 1782664328.9471815,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471836,
+                    "last_activity": 1782664328.9471836,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471858,
+                    "last_activity": 1782664328.947186,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471877,
+                    "last_activity": 1782664379.9169595,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471898,
+                    "last_activity": 1782664328.9471898,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471912,
+                    "last_activity": 1782664328.9471912,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 2,
+                "failed_tasks": 0,
+                "active_agents": 1,
+                "uptime": 45.07943248748779
+            }
+        },
+        "id": "4fc25f7b492c42a0bfd40faf7da30c11"
+    },
+    "246655c118cc4cfca81724391755fb48": {
+        "type": "activity",
+        "event_type": "TaskStarted",
+        "emoji": "▶️",
+        "label": "Task Started",
+        "status": "running",
+        "agent": "orion",
+        "department": "Research",
+        "task": "Summarize the attached PDF.",
+        "duration": null,
+        "error": null,
+        "timestamp": 1782664374.0202658,
+        "id": "246655c118cc4cfca81724391755fb48"
+    },
+    "dbf9cae04aac4e33884f75f10372e038": {
+        "type": "dashboard_state",
+        "timestamp": 1782664379.9122562,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664360.536735
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770024
+                },
+                {
+                    "name": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664379.912239
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770039
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.1770048
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206495,
+                    "last_activity": 1782664360.5367222,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065005,
+                    "last_activity": 1782664328.2065008,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065034,
+                    "last_activity": 1782664328.2065034,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065048,
+                    "last_activity": 1782664328.2065048,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065055,
+                    "last_activity": 1782664328.2065058,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065065,
+                    "last_activity": 1782664328.2065067,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065077,
+                    "last_activity": 1782664328.2065077,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.2065089,
+                    "last_activity": 1782664379.9122314,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.20651,
+                    "last_activity": 1782664328.20651,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.206511,
+                    "last_activity": 1782664328.206511,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 3,
+                "failed_tasks": 0,
+                "active_agents": 0,
+                "uptime": 51.73525428771973
+            }
+        },
+        "id": "dbf9cae04aac4e33884f75f10372e038"
+    },
+    "85007264c51241e696b866e9a0456c1d": {
+        "type": "dashboard_state",
+        "timestamp": 1782664379.9169888,
+        "data": {
+            "company": "BharatAI",
+            "status": "Working",
+            "departments": [
+                {
+                    "name": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664360.539126
+                },
+                {
+                    "name": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471543
+                },
+                {
+                    "name": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 100,
+                    "last_update": 1782664379.9169676
+                },
+                {
+                    "name": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.9471552
+                },
+                {
+                    "name": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "progress": 0,
+                    "last_update": 1782664328.947156
+                }
+            ],
+            "agents": [
+                {
+                    "name": "atlas",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471703,
+                    "last_activity": 1782664360.5391176,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "bug_fixer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947175,
+                    "last_activity": 1782664328.9471753,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "echo",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.947178,
+                    "last_activity": 1782664328.9471781,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "developer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471798,
+                    "last_activity": 1782664328.9471798,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "reviewer",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471812,
+                    "last_activity": 1782664328.9471815,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "lumina",
+                    "department": "Operations",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471836,
+                    "last_activity": 1782664328.9471836,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "neo",
+                    "department": "CEO",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471858,
+                    "last_activity": 1782664328.947186,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "orion",
+                    "department": "Research",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471877,
+                    "last_activity": 1782664379.9169595,
+                    "memory_usage": 50.0
+                },
+                {
+                    "name": "performance",
+                    "department": "Engineering",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471898,
+                    "last_activity": 1782664328.9471898,
+                    "memory_usage": 100.0
+                },
+                {
+                    "name": "qa",
+                    "department": "QA",
+                    "status": "Idle",
+                    "current_task": "None",
+                    "start_time": 1782664328.9471912,
+                    "last_activity": 1782664328.9471912,
+                    "memory_usage": 100.0
+                }
+            ],
+            "statistics": {
+                "completed_tasks": 3,
+                "failed_tasks": 0,
+                "active_agents": 0,
+                "uptime": 50.96983075141907
+            }
+        },
+        "id": "85007264c51241e696b866e9a0456c1d"
+    },
+    "d853434414d94a8eabdad1579258c711": {
+        "type": "notification",
+        "category": "completed",
+        "message": "Task successfully completed: Summarize the attached PDF.",
+        "timestamp": 1782664379.921991,
+        "id": "d853434414d94a8eabdad1579258c711"
+    },
+    "dd4b0cf7b8014c448a04a2e3dd0362ef": {
+        "type": "activity",
+        "event_type": "TaskCompleted",
+        "emoji": "✅",
+        "label": "Task Completed",
+        "status": "success",
+        "agent": "orion",
+        "department": "Research",
+        "task": "Summarize the attached PDF.",
+        "duration": null,
+        "error": null,
+        "timestamp": 1782664379.9120417,
+        "id": "dd4b0cf7b8014c448a04a2e3dd0362ef"
+    }
+}
